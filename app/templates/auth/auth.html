@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}IMAGEKEY | Authentication & Secure Vault Access{% endblock %}
+
+{% block content %}
+<div style="max-width: 480px; margin: 1rem auto;">
+    <!-- Optical Vault Auth Card -->
+    <div class="card" style="box-shadow: var(--shadow-xl); border-top: 3px solid var(--color-primary);">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="display: inline-flex; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); color: #fff; align-items: center; justify-content: center; margin-bottom: 1rem; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+            </div>
+            <h1 style="font-size: 1.65rem; font-weight: 800; letter-spacing: -0.02em;">Optical Vault Access</h1>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                Authenticate to manage images, permissions, and unlock private data.
+            </p>
+        </div>
+
+        <!-- Auth Tabs (Sign In / Register) -->
+        <div style="display: flex; background: var(--bg-surface-alt); padding: 4px; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+            <button id="tab-login" class="btn" style="flex: 1; padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.9rem;" onclick="switchAuthTab('login')">
+                Sign In
+            </button>
+            <button id="tab-register" class="btn" style="flex: 1; padding: 0.5rem; border-radius: var(--radius-sm); font-size: 0.9rem;" onclick="switchAuthTab('register')">
+                Create Account
+            </button>
+        </div>
+
+        <!-- Alert Notification Box -->
+        <div id="auth-alert" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; font-size: 0.85rem; font-weight: 500;"></div>
+
+        <!-- SIGN IN FORM -->
+        <form id="form-login" onsubmit="handleLogin(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Email Address</label>
+                <input type="email" id="login-email" required placeholder="user@company.com" 
+                       style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Password</label>
+                <input type="password" id="login-password" required placeholder="••••••••" 
+                       style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+            </div>
+            <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; margin-top: 0.5rem;">
+                Unlock Vault &rarr;
+            </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="form-register" onsubmit="handleRegister(event)" style="display: none; flex-direction: column; gap: 1rem;">
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Full Name</label>
+                <input type="text" id="reg-name" required placeholder="Jane Doe" 
+                       style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Email Address</label>
+                <input type="email" id="reg-email" required placeholder="jane@enterprise.com" 
+                       style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Account Role</label>
+                <select id="reg-role" style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+                    <option value="owner">Image Owner / Enterprise Creator</option>
+                    <option value="viewer" selected>Receiver / Verified Viewer</option>
+                    <option value="admin">System Administrator</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">Password (min. 8 characters)</label>
+                <input type="password" id="reg-password" minlength="8" required placeholder="••••••••" 
+                       style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+            </div>
+            <button type="submit" id="btn-reg-submit" class="btn btn-primary" style="width: 100%; padding: 0.85rem; margin-top: 0.5rem;">
+                Create Account & Set Token &rarr;
+            </button>
+        </form>
+
+        <div style="margin-top: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+            Protected by Zero-Trust Server-Side RBAC &middot; Encrypted Sessions
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function switchAuthTab(mode) {
+        const formLogin = document.getElementById('form-login');
+        const formRegister = document.getElementById('form-register');
+        const tabLogin = document.getElementById('tab-login');
+        const tabRegister = document.getElementById('tab-register');
+        const alertBox = document.getElementById('auth-alert');
+        alertBox.style.display = 'none';
+
+        if (mode === 'login') {
+            formLogin.style.display = 'flex';
+            formRegister.style.display = 'none';
+            tabLogin.className = 'btn btn-primary';
+            tabRegister.className = 'btn btn-outline';
+            history.replaceState(null, '', '/auth/login');
+        } else {
+            formLogin.style.display = 'none';
+            formRegister.style.display = 'flex';
+            tabLogin.className = 'btn btn-outline';
+            tabRegister.className = 'btn btn-primary';
+            history.replaceState(null, '', '/auth/register');
+        }
+    }
+
+    function showAlert(msg, isError = true) {
+        const box = document.getElementById('auth-alert');
+        box.style.display = 'block';
+        box.textContent = msg;
+        box.style.backgroundColor = isError ? 'var(--status-error-bg)' : 'var(--status-success-bg)';
+        box.style.color = isError ? 'var(--status-error)' : 'var(--status-success)';
+        box.style.border = `1px solid ${isError ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`;
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-login-submit');
+        btn.disabled = true;
+        btn.textContent = 'Verifying credentials...';
+
+        try {
+            const res = await fetch('/api/v1/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('login-email').value,
+                    password: document.getElementById('login-password').value
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Login failed');
+
+            localStorage.setItem('imagekey_token', data.access_token);
+            showAlert('Authentication successful! Redirecting to dashboard...', false);
+            setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+        } catch (err) {
+            showAlert(err.message, true);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Unlock Vault →';
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-reg-submit');
+        btn.disabled = true;
+        btn.textContent = 'Creating account...';
+
+        try {
+            const res = await fetch('/api/v1/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    full_name: document.getElementById('reg-name').value,
+                    email: document.getElementById('reg-email').value,
+                    role: document.getElementById('reg-role').value,
+                    password: document.getElementById('reg-password').value
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Registration failed');
+
+            localStorage.setItem('imagekey_token', data.access_token);
+            showAlert('Account created! Entering platform...', false);
+            setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+        } catch (err) {
+            showAlert(err.message, true);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Create Account & Set Token →';
+        }
+    }
+
+    // Auto-select tab based on URL path
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.location.pathname.includes('register')) {
+            switchAuthTab('register');
+        } else {
+            switchAuthTab('login');
+        }
+    });
+</script>
+{% endblock %}

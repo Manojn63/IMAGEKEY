@@ -1,0 +1,524 @@
+{% extends "base.html" %}
+
+{% block title %}IMAGEKEY | User Dashboard & Vault Management{% endblock %}
+
+{% block extra_head %}
+<style>
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .stat-card {
+        background: var(--bg-surface-alt);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem 1.5rem;
+    }
+    .stat-card .stat-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+        margin-bottom: 0.35rem;
+    }
+    .stat-card .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+    }
+    .image-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.25rem;
+        margin-top: 1rem;
+    }
+    .vault-asset-card {
+        background: var(--bg-surface-alt);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .vault-asset-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 960px; margin: 0 auto; padding-bottom: 3rem;">
+    <!-- Dashboard Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <span class="badge badge-info" style="margin-bottom: 0.5rem;">Secure Asset Portal</span>
+            <h1 style="font-size: 2.3rem; font-weight: 800; letter-spacing: -0.02em;">Vault Dashboard</h1>
+            <p style="color: var(--text-secondary); font-size: 1rem; margin-top: 0.25rem;">
+                Manage registered optical assets, monitor perceptual fingerprints, and configure access permissions.
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="/register-image" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.9rem;">
+                ➕ Register New Image
+            </a>
+            <a href="/scan" class="btn btn-outline" style="padding: 0.65rem 1.25rem; font-size: 0.9rem;">
+                🎯 Open Scanner
+            </a>
+        </div>
+    </div>
+
+    <!-- Auth Required Notice (if not logged in) -->
+    <div id="dash-auth-required" style="display: none; text-align: center; padding: 3rem 1.5rem;" class="card vault-card">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔐</div>
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Authentication Required</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; max-width: 440px; margin: 0 auto 1.5rem auto;">
+            Please sign in to your IMAGEKEY account to view your registered optical vault assets and manage access controls.
+        </p>
+        <a href="/auth/login" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+            Sign In to Dashboard &rarr;
+        </a>
+    </div>
+
+    <!-- Authenticated Dashboard Body -->
+    <div id="dash-body" style="display: none;">
+        <!-- Metrics Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Registered Assets</div>
+                <div class="stat-value" id="stat-total-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">System Status</div>
+                <div class="stat-value" style="color: var(--status-success); font-size: 1.3rem;">Operational</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Zero-Trust Guard</div>
+                <div class="stat-value" style="color: var(--color-primary); font-size: 1.3rem;">Active</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Tabs: My Assets vs Shared With Me -->
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: var(--bg-surface-alt); padding: 0.35rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+            <button type="button" id="tab-my-images-btn" class="btn btn-outline" style="flex: 1; border: none; font-weight: 700; background: var(--bg-surface); color: var(--color-primary); box-shadow: var(--shadow-sm);" onclick="switchDashboardTab('my')">
+                🖼️ My Registered Keys (<span id="tab-my-count">0</span>)
+            </button>
+            <button type="button" id="tab-shared-btn" class="btn btn-outline" style="flex: 1; border: none; font-weight: 700; color: var(--text-secondary);" onclick="switchDashboardTab('shared')">
+                👥 Shared With Me (<span id="tab-shared-count">0</span>)
+            </button>
+        </div>
+
+        <!-- Section 1: My Registered Optical Assets -->
+        <div id="pane-my-images" class="card vault-card" style="padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0;">Your Registered Optical Keys</h2>
+                <span id="asset-count-pill" class="badge badge-info">0 Assets</span>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="assets-loading" style="text-align: center; padding: 2rem;">
+                <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Loading assets...</div>
+            </div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+
+            <!-- Empty Assets Placeholder -->
+            <div id="assets-empty" style="display: none; text-align: center; padding: 3rem 1.5rem;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">🖼️</div>
+                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.35rem;">No Images Registered Yet</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.25rem auto;">
+                    Anchor your company logo, packaging artwork, or document seal to convert it into a secure, scannable Optical Key.
+                </p>
+                <a href="/register-image" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.9rem;">
+                    🔒 Register Your First Image
+                </a>
+            </div>
+
+            <!-- Assets Cards Grid -->
+            <div id="assets-grid" class="image-card-grid card-grid" style="display: none;"></div>
+        </div>
+
+        <!-- Section 2: Shared With Me Assets -->
+        <div id="pane-shared-images" class="card vault-card" style="display: none; padding: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0;">Optical Keys Shared With You</h2>
+                <span id="shared-count-pill" class="badge badge-info">0 Shared</span>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="shared-loading" style="text-align: center; padding: 2rem;">
+                <div style="display: inline-block; width: 32px; height: 32px; border: 3px solid var(--border-color); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">Loading shared assets...</div>
+            </div>
+
+            <!-- Empty Shared Placeholder -->
+            <div id="shared-empty" style="display: none; text-align: center; padding: 3rem 1.5rem;">
+                <div style="font-size: 2.2rem; margin-bottom: 0.75rem;">👥</div>
+                <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 0.35rem;">No Shared Assets Found</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 440px; margin: 0 auto 1.25rem auto;">
+                    When another image owner grants access to your account email, their optical keys and private vaults will appear here.
+                </p>
+            </div>
+
+            <!-- Shared Cards Grid -->
+            <div id="shared-grid" class="image-card-grid card-grid" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const token = localStorage.getItem("imagekey_token");
+        const hasSessionCookie = document.cookie.includes("imagekey_session");
+
+        if (!token && !hasSessionCookie) {
+            document.getElementById("dash-auth-required").style.display = "block";
+            return;
+        }
+
+        document.getElementById("dash-body").style.display = "block";
+        loadDashboardData(token);
+    });
+
+    async function loadDashboardData(token) {
+        const headers = {};
+        if (token) headers["Authorization"] = "Bearer " + token;
+
+        const loading = document.getElementById("assets-loading");
+        const empty = document.getElementById("assets-empty");
+        const grid = document.getElementById("assets-grid");
+
+        try {
+            const res = await fetch("/api/v1/images/my-images", { headers: headers });
+            if (!res.ok) {
+                if (res.status === 401) {
+                    document.getElementById("dash-body").style.display = "none";
+                    document.getElementById("dash-auth-required").style.display = "block";
+                    return;
+                }
+                throw new Error("Failed to load user images.");
+            }
+
+            const images = await res.json();
+            loading.style.display = "none";
+
+            document.getElementById("stat-total-count").textContent = images.length;
+            document.getElementById("asset-count-pill").textContent = `${images.length} Assets`;
+            const tabMyCount = document.getElementById("tab-my-count");
+            if (tabMyCount) tabMyCount.textContent = images.length;
+
+            // Fetch shared images count in background for tab pill
+            loadSharedData(token, true);
+
+            if (images.length === 0) {
+                empty.style.display = "block";
+                return;
+            }
+
+            grid.innerHTML = "";
+            images.forEach(img => {
+                const card = document.createElement("div");
+                card.className = "vault-asset-card asset-card";
+
+                const dateStr = new Date(img.created_at).toLocaleDateString();
+
+                card.innerHTML = `
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <span class="badge badge-success" style="font-size: 0.75rem;">Active</span>
+                            <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-primary); font-weight: 700;">
+                                ${escapeHtml(img.public_image_uid)}
+                            </span>
+                        </div>
+                        <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.25rem;">
+                            ${escapeHtml(img.title || 'Untitled Asset')}
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.75rem;">
+                            ${escapeHtml(img.description || 'No public description.')}
+                        </p>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                            Registered: ${escapeHtml(dateStr)} &middot; pHash: <code>${escapeHtml(img.phash ? img.phash.substring(0, 10) + '...' : '--')}</code>
+                        </div>
+
+                        <!-- One-Click Quick Actions Toolbar (Download, Copy, Share, Delete) -->
+                        <div class="action-toolbar" style="margin-bottom: 0.75rem; padding: 0.35rem 0.4rem; background: var(--bg-surface-alt); border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; gap: 0.35rem; justify-content: space-between;">
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.72rem; padding: 0.4rem 0.2rem; min-height: 44px;" onclick="downloadImage('${escapeHtml(img.public_image_uid)}')" title="Download Registered Image">
+                                📥 Download
+                            </button>
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.72rem; padding: 0.4rem 0.2rem; min-height: 44px;" onclick="copyDashboardAsset('${escapeHtml(img.public_image_uid)}', '${escapeJs(img.title || '')}', '${escapeJs(img.description || '')}')" title="Copy Info to Clipboard">
+                                📋 Copy
+                            </button>
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.72rem; padding: 0.4rem 0.2rem; min-height: 44px;" onclick="shareDashboardAsset('${escapeHtml(img.public_image_uid)}', '${escapeJs(img.title || '')}', '${escapeJs(img.description || '')}')" title="Share via Mobile Sheet">
+                                📲 Share
+                            </button>
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.72rem; padding: 0.4rem 0.2rem; min-height: 44px; color: #ef4444; border-color: rgba(239, 68, 68, 0.4);" onclick="handleDeleteAsset('${escapeHtml(img.public_image_uid)}')" title="Permanently delete from database and storage">
+                                🗑️ Delete
+                            </button>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <a href="/public/${img.public_image_uid}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem; text-align: center;">
+                                🌐 Public View
+                            </a>
+                            <a href="/vault/${img.public_image_uid}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem; text-align: center;">
+                                🔒 Private Vault
+                            </a>
+                            <a href="/images/${img.public_image_uid}/edit" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem; text-align: center;">
+                                ✏️ Edit Info
+                            </a>
+                            <button type="button" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem; text-align: center; color: var(--color-primary); font-weight: 600;" onclick="handleQuickShare('${escapeHtml(img.public_image_uid)}')" title="Grant access to another account email">
+                                👥 Grant Access
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            grid.style.display = "grid";
+
+        } catch (err) {
+            loading.style.display = "none";
+            empty.style.display = "block";
+            console.error("Dashboard error:", err);
+        }
+    }
+
+    async function loadSharedData(token, countOnly = false) {
+        const headers = {};
+        if (token) headers["Authorization"] = "Bearer " + token;
+
+        const loading = document.getElementById("shared-loading");
+        const empty = document.getElementById("shared-empty");
+        const grid = document.getElementById("shared-grid");
+
+        try {
+            const res = await fetch("/api/v1/images/shared-with-me", { headers: headers });
+            if (!res.ok) return;
+
+            const items = await res.json();
+            const tabCount = document.getElementById("tab-shared-count");
+            if (tabCount) tabCount.textContent = items.length;
+            const pillCount = document.getElementById("shared-count-pill");
+            if (pillCount) pillCount.textContent = `${items.length} Shared`;
+
+            if (countOnly) return;
+
+            loading.style.display = "none";
+
+            if (items.length === 0) {
+                empty.style.display = "block";
+                grid.style.display = "none";
+                return;
+            }
+
+            empty.style.display = "none";
+            grid.innerHTML = "";
+
+            items.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "vault-asset-card asset-card";
+
+                const expiresStr = item.expires_at ? new Date(item.expires_at).toLocaleString() : "Never (Permanent)";
+
+                card.innerHTML = `
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
+                            <span class="badge badge-info" style="font-size: 0.75rem;">Access: ${escapeHtml(item.access_level.toUpperCase())}</span>
+                            <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-primary); font-weight: 700;">
+                                ${escapeHtml(item.public_image_uid)}
+                            </span>
+                        </div>
+                        <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.25rem;">
+                            ${escapeHtml(item.title || 'Untitled Shared Asset')}
+                        </h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 0.75rem;">
+                            ${escapeHtml(item.description || 'No public description available.')}
+                        </p>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.4;">
+                            <div>👤 <strong>Owner:</strong> ${escapeHtml(item.owner_name || item.granted_by_email || 'Unknown')}</div>
+                            <div>⏳ <strong>Expires:</strong> ${escapeHtml(expiresStr)}</div>
+                        </div>
+
+                        <!-- One-Click Quick Actions Toolbar -->
+                        <div class="action-toolbar" style="margin-bottom: 0.75rem; padding: 0.4rem; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; gap: 0.35rem; justify-content: space-between;">
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.75rem; padding: 0.35rem 0.25rem; min-height: 32px;" onclick="downloadImage('${escapeHtml(item.public_image_uid)}')" title="Download Registered Image">
+                                📥 Download
+                            </button>
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.75rem; padding: 0.35rem 0.25rem; min-height: 32px;" onclick="copyDashboardAsset('${escapeHtml(item.public_image_uid)}', '${escapeJs(item.title || '')}', '${escapeJs(item.description || '')}')" title="Copy Info to Clipboard">
+                                📋 Copy
+                            </button>
+                            <button type="button" class="btn-action" style="flex: 1; font-size: 0.75rem; padding: 0.35rem 0.25rem; min-height: 32px;" onclick="shareDashboardAsset('${escapeHtml(item.public_image_uid)}', '${escapeJs(item.title || '')}', '${escapeJs(item.description || '')}')" title="Share via Mobile Sheet">
+                                📲 Share
+                            </button>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <a href="/public/${item.public_image_uid}" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.45rem; text-align: center;">
+                                🌐 Public View
+                            </a>
+                            <a href="/vault/${item.public_image_uid}" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.45rem; text-align: center;">
+                                🔒 Unlock Vault
+                            </a>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            grid.style.display = "grid";
+
+        } catch (err) {
+            if (!countOnly) {
+                loading.style.display = "none";
+                empty.style.display = "block";
+            }
+            console.error("Shared data load error:", err);
+        }
+    }
+
+    function switchDashboardTab(tab) {
+        const myPane = document.getElementById("pane-my-images");
+        const sharedPane = document.getElementById("pane-shared-images");
+        const myBtn = document.getElementById("tab-my-images-btn");
+        const sharedBtn = document.getElementById("tab-shared-btn");
+        const token = localStorage.getItem("imagekey_token");
+
+        if (tab === "my") {
+            myPane.style.display = "block";
+            sharedPane.style.display = "none";
+
+            myBtn.style.background = "var(--bg-surface)";
+            myBtn.style.color = "var(--color-primary)";
+            myBtn.style.boxShadow = "var(--shadow-sm)";
+
+            sharedBtn.style.background = "transparent";
+            sharedBtn.style.color = "var(--text-secondary)";
+            sharedBtn.style.boxShadow = "none";
+        } else {
+            myPane.style.display = "none";
+            sharedPane.style.display = "block";
+
+            sharedBtn.style.background = "var(--bg-surface)";
+            sharedBtn.style.color = "var(--color-primary)";
+            sharedBtn.style.boxShadow = "var(--shadow-sm)";
+
+            myBtn.style.background = "transparent";
+            myBtn.style.color = "var(--text-secondary)";
+            myBtn.style.boxShadow = "none";
+
+            loadSharedData(token, false);
+        }
+    }
+
+    async function handleDeleteAsset(uid) {
+        const confirmed = confirm(`Are you sure you want to permanently delete Optical Key [${uid}]?\n\nThis will physically remove the image file, any attached PDF, and completely erase all public and private vault records.\n\nThis action CANNOT be undone.`);
+        if (!confirmed) return;
+
+        const token = localStorage.getItem("imagekey_token");
+        const headers = {};
+        if (token) headers["Authorization"] = "Bearer " + token;
+
+        try {
+            const res = await fetch(`/api/v1/images/${uid}`, {
+                method: "DELETE",
+                headers: headers
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || "Failed to delete asset.", "error");
+                return;
+            }
+
+            showToast("Asset and files permanently deleted.", "success");
+            loadDashboardData(token);
+        } catch (err) {
+            console.error("Delete error:", err);
+            showToast("Network error deleting asset.", "error");
+        }
+    }
+
+    async function handleQuickShare(uid) {
+        const email = prompt(`Grant vault access for Optical Key [${uid}]\n\nEnter the recipient's registered IMAGEKEY email address:`);
+        if (!email || !email.trim()) return;
+
+        const token = localStorage.getItem("imagekey_token");
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = "Bearer " + token;
+
+        const expiresAt = new Date(Date.now() + 72 * 3600 * 1000).toISOString();
+
+        try {
+            const res = await fetch(`/api/v1/permissions/${uid}`, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify({
+                    email: email.trim(),
+                    access_level: "view_private",
+                    expires_at: expiresAt
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.detail || "Failed to grant access.", "error");
+                return;
+            }
+
+            showToast(`Granted 72-hour access to ${email.trim()}!`, "success");
+        } catch (err) {
+            console.error("Quick share error:", err);
+            showToast("Network error while granting access.", "error");
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function escapeJs(str) {
+        return String(str || "")
+            .replace(/\\/g, "\\\\")
+            .replace(/'/g, "\\'")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, " ");
+    }
+
+    function copyDashboardAsset(uid, title, description) {
+        const shareUrl = `${window.location.origin}/public/${uid}`;
+        const cleanTitle = title || 'Registered Optical Key';
+        const desc = description ? description + '\n' : '';
+        const text = `${cleanTitle}\n${desc}View verified optical details:\n${shareUrl}`;
+        copyText(text, 'Copied details & public link to clipboard!');
+    }
+
+    function shareDashboardAsset(uid, title, description) {
+        shareImageAndInfo({
+            uid: uid,
+            title: title || 'Registered Optical Key',
+            description: description
+        });
+    }
+</script>
+{% endblock %}

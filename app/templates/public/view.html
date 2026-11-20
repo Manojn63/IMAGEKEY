@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+
+{% block title %}IMAGEKEY | Verified Public Information{% endblock %}
+
+{% block extra_head %}
+<style>
+    .verified-header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--status-success);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 0.35rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    .service-tag {
+        display: inline-block;
+        background: var(--bg-surface-alt);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+        padding: 0.35rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .contact-card {
+        background: var(--bg-surface-alt);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        margin-top: 1.5rem;
+    }
+    .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    .contact-item strong {
+        color: var(--text-primary);
+        min-width: 110px;
+    }
+    .vault-locked-banner {
+        background: linear-gradient(135deg, rgba(30, 64, 175, 0.08), rgba(6, 182, 212, 0.08));
+        border: 1px solid rgba(37, 99, 235, 0.3);
+        border-radius: var(--radius-lg);
+        padding: 1.75rem;
+        margin-top: 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .vault-locked-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--color-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto; padding-bottom: 3rem;">
+
+    <!-- LOADING PLACEHOLDER -->
+    <div id="loading-spinner" style="text-align: center; padding: 4rem 1rem;">
+        <div style="display: inline-block; width: 44px; height: 44px; border: 3px solid var(--border-color); border-top-color: var(--color-primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <div style="margin-top: 1rem; color: var(--text-secondary); font-weight: 600;">
+            Retrieving Verified Public Information...
+        </div>
+    </div>
+    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+
+    <!-- ERROR STATE (NOT FOUND) -->
+    <div id="error-card" class="card vault-card" style="display: none; text-align: center; padding: 3rem 1.5rem;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔍</div>
+        <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Image Not Found</h2>
+        <p id="error-message" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
+            The requested optical identifier does not correspond to an active registered key.
+        </p>
+        <a href="/scan" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+            Open Optical Scanner &rarr;
+        </a>
+    </div>
+
+    <!-- MAIN PUBLIC VIEW CARD -->
+    <div id="public-card" class="card vault-card" style="display: none; margin-bottom: 2rem;">
+        
+        <!-- AUTO-REDIRECT NOTIFICATION BANNER (When auto_redirect is active) -->
+        <div id="redirect-banner" style="display: none; background: rgba(37, 99, 235, 0.08); border: 1px solid var(--color-primary); padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <div style="font-weight: 700; color: var(--color-primary); font-size: 1rem;">
+                        ⚡ Direct Destination Link Enabled
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                        Automatically redirecting to destination URL in <span id="redirect-countdown" style="font-weight: 700; color: var(--color-primary);">2</span>s...
+                    </div>
+                </div>
+                <a id="redirect-manual-link" href="#" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.4rem 0.85rem;">
+                    Go Now &rarr;
+                </a>
+            </div>
+        </div>
+
+        <!-- RESPONSIVE EMBEDDED VIDEO PLAYER (YouTube or direct MP4/WebM) -->
+        <div id="video-player-container" style="display: none; margin-bottom: 1.5rem; border-radius: var(--radius-md); overflow: hidden; background: #000; box-shadow: var(--shadow-md);">
+        </div>
+
+        <!-- Top Verified Header -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div>
+                <span class="verified-header-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                        <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                    Verified Optical Record
+                </span>
+                <h1 id="public-title" style="font-size: 2.1rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.25rem;">
+                    --
+                </h1>
+                <div id="company-wrapper" style="display: none; align-items: center; gap: 0.5rem; font-size: 0.95rem; color: var(--color-primary); font-weight: 600;">
+                    <span>🏢</span>
+                    <span id="company-name">--</span>
+                    <a id="company-website" href="#" target="_blank" rel="noopener noreferrer" style="font-size: 0.8rem; text-decoration: underline; color: var(--text-muted);">(Website)</a>
+                </div>
+            </div>
+
+            <!-- Public Image UID Badge -->
+            <div style="background: var(--bg-surface-alt); padding: 0.65rem 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); text-align: right;">
+                <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">
+                    Public Image UID
+                </div>
+                <div id="public-uid" style="font-family: var(--font-mono); font-weight: 800; font-size: 1.2rem; color: var(--color-primary); letter-spacing: 0.05em;">
+                    --
+                </div>
+            </div>
+        </div>
+
+        <!-- One-Click Sharing & Download Quick Bar -->
+        <div style="background: var(--bg-surface-alt); padding: 0.9rem 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); margin: 1.25rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+            <div>
+                <div style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                    Digital Asset Actions
+                </div>
+                <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">
+                    Download original or share verified details
+                </div>
+            </div>
+            <div class="action-toolbar">
+                <button type="button" class="btn-action btn-action-primary" onclick="handleDownloadPublicImage()">
+                    📥 Download Image
+                </button>
+                <button type="button" class="btn-action" onclick="handleCopyPublicInfo()">
+                    📋 Copy Info
+                </button>
+                <button type="button" class="btn-action" onclick="handleSharePublicInfo()">
+                    📲 Share
+                </button>
+            </div>
+        </div>
+
+        <!-- Description with One-Tap Copy -->
+        <div style="margin: 1.5rem 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h3 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 0;">
+                    Public Description / Content
+                </h3>
+                <button type="button" class="btn-action" style="font-size: 0.75rem; padding: 0.25rem 0.6rem; min-height: 28px;" onclick="handleCopyDescriptionOnly()">
+                    📋 Copy Text
+                </button>
+            </div>
+            <p id="public-description" style="color: var(--text-primary); font-size: 1.05rem; line-height: 1.6; white-space: pre-line; background: var(--bg-surface-alt); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                --
+            </p>
+        </div>
+
+        <!-- ATTACHED PDF DOCUMENT VIEWER -->
+        <div id="pdf-viewer-section" style="display: none; margin: 1.5rem 0; background: var(--bg-surface-alt); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.6rem;">📄</span>
+                    <div>
+                        <h3 style="font-size: 1.05rem; font-weight: 700; margin: 0;">Attached PDF Document</h3>
+                        <span id="pdf-doc-name" style="font-size: 0.8rem; color: var(--text-muted);">document.pdf</span>
+                    </div>
+                </div>
+                <div class="action-toolbar">
+                    <a id="pdf-open-btn" href="#" target="_blank" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+                        Open Fullscreen &rarr;
+                    </a>
+                    <a id="pdf-download-btn" href="#" download class="btn btn-outline" style="font-size: 0.85rem; padding: 0.45rem 0.85rem;">
+                        📥 Download PDF
+                    </a>
+                </div>
+            </div>
+            <div class="pdf-container">
+                <iframe id="pdf-embed-frame" style="width: 100%; height: 100%; border: 1px solid var(--border-color); border-radius: 12px; background: #ffffff;"></iframe>
+            </div>
+        </div>
+
+        <!-- Services Tags -->
+        <div id="services-section" style="display: none; margin: 1.5rem 0;">
+            <h3 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.5rem;">
+                Official Services & Capabilities
+            </h3>
+            <div id="services-container" style="display: flex; flex-wrap: wrap;"></div>
+        </div>
+
+        <!-- Contact & Web Links -->
+        <div class="contact-card">
+            <h3 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">
+                Verified Public Contact Channels
+            </h3>
+            <div id="contact-website-row" class="contact-item" style="display: none;">
+                <strong>Official Website:</strong>
+                <a id="contact-website" href="#" target="_blank" rel="noopener noreferrer" style="color: var(--color-primary); text-decoration: underline; font-weight: 600;">
+                    --
+                </a>
+            </div>
+            <div id="contact-email-row" class="contact-item" style="display: none;">
+                <strong>Contact Email:</strong>
+                <a id="contact-email" href="#" style="color: var(--text-primary);">--</a>
+            </div>
+            <div id="contact-phone-row" class="contact-item" style="display: none;">
+                <strong>Telephone:</strong>
+                <span id="contact-phone" style="color: var(--text-primary);">--</span>
+            </div>
+            <div id="no-contact-msg" style="display: none; font-size: 0.9rem; color: var(--text-muted);">
+                No direct contact details registered publicly.
+            </div>
+        </div>
+
+        <!-- ENCRYPTED PRIVATE VAULT LOCKED CALLOUT -->
+        <div class="vault-locked-banner">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div style="max-width: 480px;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+                        <span style="font-size: 1.25rem;">🔒</span>
+                        <h4 style="font-size: 1.15rem; font-weight: 800; margin: 0;">
+                            Encrypted Tier 2 Private Vault
+                        </h4>
+                        <span class="badge" style="background: rgba(239, 68, 68, 0.12); color: var(--status-error); border: 1px solid rgba(239, 68, 68, 0.3);">
+                            Locked &middot; Zero-Trust
+                        </span>
+                    </div>
+                    <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0;">
+                        This optical asset contains confidential records, authorized documentation, or sensitive credentials protected by cryptographic role-based access controls.
+                    </p>
+                </div>
+                <div>
+                    <a id="btn-unlock-vault" href="#" class="btn btn-primary" style="padding: 0.65rem 1.25rem; font-size: 0.9rem; white-space: nowrap;">
+                        🔓 Unlock Private Information &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Actions Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 0.75rem;">
+            <a href="/scan" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+                &larr; Scan Another Image
+            </a>
+            <div style="display: flex; gap: 0.75rem;">
+                <a id="btn-edit-link" href="#" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+                    ✏️ Edit Information (Owner)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const publicUID = "{{ public_image_uid }}";
+    let publicData = null;
+
+    function handleDownloadPublicImage() {
+        downloadImage(publicUID);
+    }
+
+    function handleCopyPublicInfo() {
+        if (!publicData) return;
+        const shareUrl = `${window.location.origin}/public/${publicUID}`;
+        const title = publicData.title || 'Verified Optical Record';
+        const desc = publicData.description ? publicData.description + '\n' : '';
+        const text = `${title}\n${desc}View verified optical details:\n${shareUrl}`;
+        copyText(text, 'Copied details & public link to clipboard!');
+    }
+
+    function handleCopyDescriptionOnly() {
+        if (!publicData || !publicData.description) {
+            showToast("No description text to copy.", "warn");
+            return;
+        }
+        copyText(publicData.description, "Description text copied!");
+    }
+
+    function getYouTubeEmbedUrl(url) {
+        if (!url) return null;
+        try {
+            const u = new URL(url);
+            if (u.hostname.includes("youtube.com")) {
+                if (u.pathname === "/watch") {
+                    const v = u.searchParams.get("v");
+                    if (v) return `https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&playsinline=1`;
+                } else if (u.pathname.startsWith("/shorts/")) {
+                    const v = u.pathname.split("/shorts/")[1].split("/")[0];
+                    if (v) return `https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&playsinline=1`;
+                } else if (u.pathname.startsWith("/embed/")) {
+                    return url;
+                }
+            } else if (u.hostname === "youtu.be") {
+                const v = u.pathname.substring(1).split("/")[0];
+                if (v) return `https://www.youtube-nocookie.com/embed/${v}?autoplay=1&mute=1&playsinline=1`;
+            }
+        } catch (e) {}
+        return null;
+    }
+
+    function isDirectVideoUrl(url) {
+        if (!url) return false;
+        const clean = url.split("?")[0].toLowerCase();
+        return clean.endsWith(".mp4") || clean.endsWith(".webm") || clean.endsWith(".ogg");
+    }
+
+    function handleSharePublicInfo() {
+        if (!publicData) return;
+        shareImageAndInfo({
+            uid: publicUID,
+            title: publicData.title,
+            description: publicData.description
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const loading = document.getElementById("loading-spinner");
+        const errorCard = document.getElementById("error-card");
+        const publicCard = document.getElementById("public-card");
+
+        try {
+            const res = await fetch(`/api/v1/public-info/${publicUID}`);
+            const data = await res.json();
+
+            if (!res.ok) {
+                loading.style.display = "none";
+                errorCard.style.display = "block";
+                document.getElementById("error-message").textContent = data.detail || "Unable to locate public information.";
+                return;
+            }
+
+            publicData = data;
+
+            // 1. Check for Embedded Video Player
+            const ytEmbedUrl = getYouTubeEmbedUrl(data.website_url);
+            const isDirectVideo = isDirectVideoUrl(data.website_url);
+            const videoContainer = document.getElementById("video-player-container");
+
+            if (ytEmbedUrl) {
+                videoContainer.innerHTML = `<iframe src="${ytEmbedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width: 100%; aspect-ratio: 16/9; display: block;"></iframe>`;
+                videoContainer.style.display = "block";
+            } else if (isDirectVideo) {
+                videoContainer.innerHTML = `<video src="${data.website_url}" controls autoplay muted playsinline style="width: 100%; max-height: 440px; display: block;"></video>`;
+                videoContainer.style.display = "block";
+            } else if (data.auto_redirect && data.website_url) {
+                // 2. Direct Website Auto-Redirect (when not an embedded video)
+                const banner = document.getElementById("redirect-banner");
+                const countdown = document.getElementById("redirect-countdown");
+                const manualLink = document.getElementById("redirect-manual-link");
+                manualLink.href = data.website_url;
+                banner.style.display = "block";
+
+                let secondsLeft = 2;
+                countdown.textContent = secondsLeft;
+                const timer = setInterval(() => {
+                    secondsLeft -= 1;
+                    if (secondsLeft > 0) {
+                        countdown.textContent = secondsLeft;
+                    } else {
+                        clearInterval(timer);
+                        window.location.href = data.website_url;
+                    }
+                }, 1000);
+            }
+
+            // 3. Check for Attached PDF
+            if (data.has_pdf && data.pdf_url) {
+                const pdfSection = document.getElementById("pdf-viewer-section");
+                const pdfName = document.getElementById("pdf-doc-name");
+                const pdfOpenBtn = document.getElementById("pdf-open-btn");
+                const pdfDownloadBtn = document.getElementById("pdf-download-btn");
+                const pdfFrame = document.getElementById("pdf-embed-frame");
+
+                pdfName.textContent = data.pdf_original_name || "document.pdf";
+                pdfOpenBtn.href = data.pdf_url;
+                pdfDownloadBtn.href = data.pdf_url;
+                pdfFrame.src = data.pdf_url;
+                pdfSection.style.display = "block";
+            }
+
+            // Populate Public Card
+            document.getElementById("public-title").textContent = data.title || "Registered Optical Key";
+            document.getElementById("public-uid").textContent = data.public_image_uid;
+            document.getElementById("public-description").textContent = data.description || "No public description provided.";
+
+            // Company info
+            if (data.company_name) {
+                document.getElementById("company-wrapper").style.display = "flex";
+                document.getElementById("company-name").textContent = data.company_name;
+                const compWeb = document.getElementById("company-website");
+                if (data.company_website) {
+                    compWeb.href = data.company_website;
+                    compWeb.style.display = "inline";
+                } else {
+                    compWeb.style.display = "none";
+                }
+            }
+
+            // Services Tags
+            if (data.services_json && Array.isArray(data.services_json) && data.services_json.length > 0) {
+                const sContainer = document.getElementById("services-container");
+                sContainer.innerHTML = "";
+                data.services_json.forEach(item => {
+                    const tag = document.createElement("span");
+                    tag.className = "service-tag";
+                    tag.textContent = typeof item === "string" ? item : (item.name || item.title || JSON.stringify(item));
+                    sContainer.appendChild(tag);
+                });
+                document.getElementById("services-section").style.display = "block";
+            }
+
+            // Contact Channels
+            let hasContact = false;
+            if (data.website_url) {
+                hasContact = true;
+                const webLink = document.getElementById("contact-website");
+                webLink.href = data.website_url;
+                webLink.textContent = data.website_url;
+                document.getElementById("contact-website-row").style.display = "flex";
+            }
+            if (data.contact_email) {
+                hasContact = true;
+                const emailLink = document.getElementById("contact-email");
+                emailLink.href = "mailto:" + data.contact_email;
+                emailLink.textContent = data.contact_email;
+                document.getElementById("contact-email-row").style.display = "flex";
+            }
+            if (data.contact_phone) {
+                hasContact = true;
+                document.getElementById("contact-phone").textContent = data.contact_phone;
+                document.getElementById("contact-phone-row").style.display = "flex";
+            }
+            if (!hasContact) {
+                document.getElementById("no-contact-msg").style.display = "block";
+            }
+
+            // Buttons routing
+            document.getElementById("btn-unlock-vault").href = `/vault/${data.public_image_uid}`;
+            document.getElementById("btn-edit-link").href = `/images/${data.public_image_uid}/edit`;
+
+            loading.style.display = "none";
+            publicCard.style.display = "block";
+
+        } catch (err) {
+            loading.style.display = "none";
+            errorCard.style.display = "block";
+            document.getElementById("error-message").textContent = "Network error: " + err.message;
+        }
+    });
+</script>
+{% endblock %}

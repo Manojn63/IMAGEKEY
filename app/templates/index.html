@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}IMAGEKEY | Image-Based Tiered Information Sharing{% endblock %}
+
+{% block content %}
+<section style="text-align: center; max-width: 900px; margin: 0 auto 3rem auto;">
+    <span class="badge badge-info" style="margin-bottom: 1rem;">Phase 1: Architecture & Foundation</span>
+    <h1 style="font-size: 2.75rem; font-weight: 800; line-height: 1.2; margin-bottom: 1rem; letter-spacing: -0.03em;">
+        Turn Any Image into a <span style="color: var(--color-primary);">Secure Portal</span>
+    </h1>
+    <p style="font-size: 1.15rem; color: var(--text-secondary); margin-bottom: 2rem;">
+        Register logos, product packaging, and documents. Allow anyone to visually scan and retrieve public details, while protecting confidential records with Zero-Trust RBAC.
+    </p>
+
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/scan" class="btn btn-primary" style="padding: 0.85rem 1.75rem; font-size: 1rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Live Camera / File Scanner
+        </a>
+        <a href="/register-image" class="btn btn-outline" style="padding: 0.85rem 1.75rem; font-size: 1rem;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" x2="12" y1="3" y2="15"/>
+            </svg>
+            Register New Image
+        </a>
+    </div>
+</section>
+
+<!-- Core Mission Flow Banner -->
+<div class="card" style="margin-bottom: 3rem; background: linear-gradient(to right, var(--bg-surface), var(--bg-surface-alt));">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary); font-weight: 700;">
+            Platform Core Mission & Architecture Workflow
+        </h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; text-align: center;">
+        <div style="padding: 1rem; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📤</div>
+            <div style="font-weight: 700; font-size: 0.9rem;">1. Upload Image</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Logo / Product</div>
+        </div>
+        <div style="padding: 1rem; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚡</div>
+            <div style="font-weight: 700; font-size: 0.9rem;">2. Hash & Register</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">pHash + Descriptors</div>
+        </div>
+        <div style="padding: 1rem; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🌐</div>
+            <div style="font-weight: 700; font-size: 0.9rem;">3. Distribute Image</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Print / Web / Social</div>
+        </div>
+        <div style="padding: 1rem; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📷</div>
+            <div style="font-weight: 700; font-size: 0.9rem;">4. Scan / Match</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Webcam / Upload</div>
+        </div>
+        <div style="padding: 1rem; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔓</div>
+            <div style="font-weight: 700; font-size: 0.9rem;">5. Tiered Data</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">Public & Zero-Trust Private</div>
+        </div>
+    </div>
+</div>
+
+<!-- Diagnostics & Health Dashboard -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+    <!-- System Status Card -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">System Architecture Diagnostics</h2>
+            <span class="badge badge-success" id="live-health-badge">Checking...</span>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.25rem;">
+            Live telemetry from the FastAPI core runtime and database driver:
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; font-family: var(--font-mono); font-size: 0.85rem;">
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-surface-alt); border-radius: var(--radius-sm);">
+                <span>Application:</span>
+                <strong id="diag-app">{{ app_name }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-surface-alt); border-radius: var(--radius-sm);">
+                <span>Environment:</span>
+                <strong id="diag-env">{{ environment }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-surface-alt); border-radius: var(--radius-sm);">
+                <span>Database Connectivity:</span>
+                <strong id="diag-db">Checking...</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 0.5rem; background: var(--bg-surface-alt); border-radius: var(--radius-sm);">
+                <span>Theme Engine:</span>
+                <strong id="diag-theme">Light/Dark Mode Ready</strong>
+            </div>
+        </div>
+        <div style="margin-top: 1.25rem; text-align: right;">
+            <a href="/api/v1/health" target="_blank" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.85rem;">
+                Raw JSON Diagnostics &rarr;
+            </a>
+        </div>
+    </div>
+
+    <!-- 8-Phase Implementation Checklist -->
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">8-Phase Protocol Progress</h2>
+            <span class="badge badge-info">Phase 1 Active</span>
+        </div>
+        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--status-success); font-weight: 600;">
+                <span>✅</span> Phase 1: Project Scaffolding, Core FastAPI & Base UI System
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 2: User Registration, JWT Auth & RBAC Middleware
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 3: Secure Upload, EXIF Stripping & Perceptual Hashing
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 4: Recognition Engine (pHash + ORB/SIFT) & Scanner UI
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 5: Public Information CRUD & Result View
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 6: Private Information CRUD & Permission Manager
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 7: Admin Dashboard & Access Log Audit Viewer
+            </li>
+            <li style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-muted);">
+                <span>⏳</span> Phase 8: Security Hardening, Rate Limiting & Pytest Suite
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Asynchronously ping the health endpoint to update UI status
+    async function checkSystemHealth() {
+        const badge = document.getElementById('live-health-badge');
+        const dbStatus = document.getElementById('diag-db');
+
+        try {
+            const res = await fetch('/api/v1/health');
+            const data = await res.json();
+
+            if (data.status === 'ok') {
+                badge.className = 'badge badge-success';
+                badge.textContent = 'ONLINE & HEALTHY';
+                dbStatus.textContent = 'PostgreSQL Connected';
+                dbStatus.style.color = 'var(--status-success)';
+            } else {
+                badge.className = 'badge badge-warn';
+                badge.textContent = 'DEGRADED';
+                dbStatus.textContent = data.database?.status === 'connected' ? 'Connected' : 'Waiting for DB';
+                dbStatus.style.color = 'var(--status-warn)';
+            }
+        } catch (err) {
+            badge.className = 'badge badge-warn';
+            badge.textContent = 'STANDALONE MODE';
+            dbStatus.textContent = 'PostgreSQL Not Detected Yet';
+            dbStatus.style.color = 'var(--status-warn)';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkSystemHealth);
+</script>
+{% endblock %}

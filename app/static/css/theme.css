@@ -1,0 +1,819 @@
+/* ==============================================================================
+   IMAGEKEY Design System & Theme Styles
+   Enterprise Color Palette: Deep Tech Blue (#1E40AF / #2563EB) & Dark (#0F172A)
+============================================================================== */
+
+:root {
+    /* Color Palette - Light Theme (Default) */
+    --color-primary: #2563eb;
+    --color-primary-hover: #1d4ed8;
+    --color-primary-dark: #1e40af;
+    --color-primary-light: #dbeafe;
+    --color-accent: #38bdf8;
+
+    --bg-body: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-alt: #f1f5f9;
+    --bg-glass: rgba(255, 255, 255, 0.85);
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --text-inverse: #ffffff;
+
+    --border-color: #e2e8f0;
+    --border-focus: #3b82f6;
+
+    --status-success: #10b981;
+    --status-success-bg: #ecfdf5;
+    --status-warn: #f59e0b;
+    --status-warn-bg: #fffbeb;
+    --status-error: #ef4444;
+    --status-error-bg: #fef2f2;
+    --status-info: #0284c7;
+    --status-info-bg: #f0f9ff;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 9999px;
+
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme Overrides - Luxury 3D Glassmorphic Obsidian & Champagne Gold */
+[data-theme="dark"] {
+    --color-primary: #D4AF37;           /* Metallic Champagne Gold */
+    --color-primary-hover: #E5C158;     /* Luminous Champagne Gold */
+    --color-primary-dark: #AA7C11;      /* Deep Burnished Gold */
+    --color-primary-light: #2A2415;     /* Dark Gold Tint */
+    --color-accent: #10B981;            /* Emerald Green Active */
+    --color-gold: #D4AF37;
+    --color-emerald: #10B981;
+
+    --bg-body: #0A0D14;                 /* Deep Obsidian */
+    --bg-surface: rgba(17, 24, 39, 0.72); /* Elevated Glass Surface */
+    --bg-surface-alt: #161D2C;          /* Secondary Obsidian Plate */
+    --bg-glass: rgba(10, 13, 20, 0.88);
+
+    --text-primary: #FFFFFF;            /* Crisp White */
+    --text-secondary: #CBD5E1;          /* Soft Slate */
+    --text-muted: #8E9BAE;              /* Subdued Slate */
+    --text-inverse: #0A0D14;
+
+    --border-color: rgba(212, 175, 55, 0.22); /* Subdued Gold Accent Border */
+    --border-focus: #E5C158;
+
+    --status-success: #10B981;          /* Emerald Green */
+    --status-success-bg: rgba(16, 185, 129, 0.16);
+    --status-warn: #F59E0B;
+    --status-warn-bg: rgba(245, 158, 11, 0.16);
+    --status-error: #EF4444;
+    --status-error-bg: rgba(239, 68, 68, 0.16);
+    --status-info: #D4AF37;
+    --status-info-bg: rgba(212, 175, 55, 0.16);
+
+    --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 4px 14px -1px rgba(0, 0, 0, 0.5), 0 0 10px rgba(212, 175, 55, 0.08);
+    --shadow-lg: 0 12px 28px -3px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.12);
+}
+
+/* Base Styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+a:hover {
+    color: var(--color-primary-hover);
+}
+
+/* Layout Container */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+/* Navbar */
+.navbar {
+    background-color: var(--bg-glass);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    transition: background-color var(--transition-base), border-color var(--transition-base);
+}
+
+.nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 70px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+}
+
+.brand-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    color: #ffffff;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    list-style: none;
+}
+
+.nav-link {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--color-primary);
+    background-color: var(--bg-surface-alt);
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Theme Toggle Button */
+.btn-theme-toggle {
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-full);
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.15rem;
+    transition: all var(--transition-fast);
+}
+
+.btn-theme-toggle:hover {
+    color: var(--text-primary);
+    border-color: var(--border-focus);
+    transform: scale(1.05);
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-hover);
+    color: #ffffff;
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-outline:hover {
+    background-color: var(--bg-surface-alt);
+    border-color: var(--border-focus);
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    padding-top: 2.5rem;
+    padding-bottom: 4rem;
+}
+
+/* Cards */
+.card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Status Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-success {
+    background-color: var(--status-success-bg);
+    color: var(--status-success);
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.badge-warn {
+    background-color: var(--status-warn-bg);
+    color: var(--status-warn);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.badge-info {
+    background-color: var(--status-info-bg);
+    color: var(--status-info);
+    border: 1px solid rgba(2, 132, 199, 0.25);
+}
+
+/* Footer */
+.footer {
+    background-color: var(--bg-surface);
+    border-top: 1px solid var(--border-color);
+    padding: 2.5rem 0;
+    margin-top: auto;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .footer-content {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .nav-links {
+        display: none;
+    }
+}
+
+/* ==============================================================================
+   OPTICAL VAULT & SCANNER HUD SIGNATURE STYLES
+   Accent: Optical Cyan (#06B6D4) & Deep Tech Blue (#2563EB)
+============================================================================== */
+
+:root {
+    --color-cyan: #06b6d4;
+    --color-cyan-glow: rgba(6, 182, 212, 0.4);
+    --laser-color: rgba(37, 99, 235, 0.85);
+}
+
+[data-theme="dark"] {
+    --color-cyan: #22d3ee;
+    --color-cyan-glow: rgba(34, 211, 238, 0.45);
+    --laser-color: rgba(6, 182, 212, 0.9);
+}
+
+/* Glassmorphic Vault Card */
+.vault-card {
+    background: var(--bg-glass);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.vault-locked {
+    border-color: rgba(239, 68, 68, 0.4);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), var(--bg-surface));
+}
+
+.vault-unlocked {
+    border-color: rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), var(--bg-surface));
+}
+
+/* Optical Scanner Viewfinder HUD */
+.scanner-hud {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    height: 380px;
+    margin: 0 auto;
+    border-radius: var(--radius-lg);
+    background-color: #000000;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px var(--color-cyan-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scanner-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Animated Corner Brackets in Metallic Champagne Gold */
+.hud-corner {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.45);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hud-corner.tl { top: 16px; left: 16px; border-right: none; border-bottom: none; border-top-left-radius: 8px; }
+.hud-corner.tr { top: 16px; right: 16px; border-left: none; border-bottom: none; border-top-right-radius: 8px; }
+.hud-corner.bl { bottom: 16px; left: 16px; border-right: none; border-top: none; border-bottom-left-radius: 8px; }
+.hud-corner.br { bottom: 16px; right: 16px; border-left: none; border-top: none; border-bottom-right-radius: 8px; }
+
+/* Laser Scanline Animation in Glowing Emerald Green */
+.hud-laser {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #10B981, #FFFFFF, #10B981, transparent);
+    box-shadow: 0 0 14px #10B981, 0 0 28px rgba(16, 185, 129, 0.7);
+    z-index: 12;
+    animation: scanLaser 2.4s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+@keyframes scanLaser {
+    0% { top: 8%; opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { top: 92%; opacity: 0.3; }
+}
+
+/* Match Confidence Meter */
+.confidence-gauge {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--bg-surface-alt);
+    border: 1px solid var(--border-color);
+}
+
+.confidence-bar-bg {
+    width: 100%;
+    height: 12px;
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.confidence-bar-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confidence-high { background-color: var(--status-success); }
+.confidence-medium { background-color: var(--status-warn); }
+.confidence-low { background-color: var(--status-error); }
+
+/* ==============================================================================
+   MOBILE-FIRST NATIVE APP STYLING & BOTTOM NAVIGATION BAR
+   Refined for Android APK & PWA Touch Interactions
+============================================================================== */
+
+/* Native Tap Optimization */
+button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Touch-friendly Micro-Interactions */
+.btn:active, .mobile-nav-item:active, .btn-action:active {
+    transform: scale(0.96);
+}
+
+/* Floating App Toast Notification */
+.app-toast {
+    position: fixed;
+    bottom: 84px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text-primary);
+    color: var(--text-inverse);
+    padding: 0.75rem 1.25rem;
+    border-radius: var(--radius-full);
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    max-width: 90vw;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.app-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.app-toast.success {
+    background: #065f46;
+    color: #ecfdf5;
+    border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.app-toast.warn {
+    background: #92400e;
+    color: #fffbeb;
+    border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding-bottom: 78px; /* Offset for sticky bottom navigation */
+    }
+
+    .main-content {
+        padding-top: 1.25rem;
+        padding-bottom: 2rem;
+    }
+
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Refine top nav for mobile */
+    .nav-wrapper {
+        height: 60px;
+    }
+
+    .brand {
+        font-size: 1.15rem;
+    }
+
+    .brand-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .nav-actions .btn {
+        padding: 0.45rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    /* Fixed Native App Bottom Bar */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background: var(--bg-glass);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-top: 1px solid var(--border-color);
+        justify-content: space-around;
+        align-items: center;
+        z-index: 1000;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        text-decoration: none;
+        flex: 1;
+        height: 100%;
+        gap: 0.2rem;
+        transition: color var(--transition-fast), transform var(--transition-fast);
+        padding: 0.35rem 0;
+    }
+
+    .mobile-nav-item:hover, .mobile-nav-item.active {
+        color: var(--color-primary);
+    }
+
+    .mobile-nav-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+    }
+
+    .mobile-nav-label {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    /* Highlighted scan icon */
+    .mobile-nav-item.scan-highlight .mobile-nav-icon {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--color-primary), var(--color-cyan));
+        color: #ffffff;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.4);
+        margin-top: -8px;
+    }
+
+    .mobile-nav-item.scan-highlight.active .mobile-nav-icon {
+        box-shadow: 0 0 14px var(--color-cyan);
+    }
+}
+
+/* Quick Action Toolbar (Sharing, Download, Copy) */
+.action-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 38px;
+}
+
+.btn-action:hover {
+    background: var(--bg-surface-alt);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-action.btn-action-primary {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #ffffff;
+}
+
+.btn-action.btn-action-primary:hover {
+    background: var(--color-primary-hover);
+    color: #ffffff;
+}
+
+/* ==============================================================================
+   IMAGEKEY - MOBILE-APP-FIRST UI / PWA / APK UPGRADE (Responsive overrides)
+   ============================================================================== */
+
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Touch targets optimization */
+button, a, .btn, .nav-item {
+  min-height: 44px;
+  min-width: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+/* Exception for inline text links so typography & reading flow are undisturbed */
+p a, span a, .contact-item a, .footer a {
+  min-height: auto;
+  min-width: auto;
+  user-select: auto;
+}
+
+/* Glassmorphic Cards Adjustments for Small Screens */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 8px;
+}
+
+@media (min-width: 768px) {
+  .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+    padding: 20px;
+  }
+}
+
+/* MOBILE BOTTOM NAVIGATION BAR (Screens < 768px) */
+.mobile-nav, .mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: calc(64px + var(--safe-bottom));
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: var(--safe-bottom);
+  z-index: 1000;
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 768px) {
+  .mobile-nav, .mobile-bottom-nav {
+    display: none !important;
+  }
+  body {
+    padding-bottom: 0px !important;
+  }
+}
+
+/* Adjust Body padding so content isn't cut off by bottom bar on Mobile */
+body {
+  padding-bottom: calc(76px + var(--safe-bottom));
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-item i, .mobile-nav-item svg {
+  font-size: 20px;
+  margin-bottom: 3px;
+}
+
+.mobile-nav-item.active {
+  color: #10b981; /* Lime Green Active */
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+/* Floating Center Camera (Scan) Button */
+.mobile-nav-item.scan-fab, .mobile-nav-item.scan-highlight {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #ffffff;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  margin-top: -24px;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+  border: 4px solid #0f172a;
+}
+
+.mobile-nav-item.scan-fab i, .mobile-nav-item.scan-fab svg,
+.mobile-nav-item.scan-highlight i, .mobile-nav-item.scan-highlight svg {
+  font-size: 24px;
+  margin: 0;
+  width: 24px;
+  height: 24px;
+}
+
+/* PDF Embedded Viewer adjustment for Mobile */
+.pdf-container {
+  width: 100%;
+  height: 350px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+@media (min-width: 768px) {
+  .pdf-container {
+    height: 600px;
+  }
+}
+
+/* Compact dashboard list view for mobile */
+.asset-card, .vault-asset-card {
+  padding: 12px;
+  background: rgba(30, 41, 59, 0.4);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+

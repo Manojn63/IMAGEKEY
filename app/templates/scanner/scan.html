@@ -1,0 +1,715 @@
+{% extends "base.html" %}
+
+{% block title %}IMAGEKEY | Live Optical Scanner & Image Recognition{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Mode Switcher Tabs */
+    .scanner-tabs {
+        display: flex;
+        gap: 0.5rem;
+        background: var(--bg-surface-alt);
+        padding: 0.35rem;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+        max-width: 440px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .scanner-tab-btn {
+        flex: 1;
+        padding: 0.65rem 1rem;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    .scanner-tab-btn.active {
+        background: var(--bg-surface);
+        color: var(--color-primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    /* Live Camera Viewfinder & HUD Overlay */
+    .viewfinder-wrapper {
+        position: relative;
+        width: 100%;
+        max-width: 580px;
+        aspect-ratio: 4 / 3;
+        margin: 0 auto;
+        background: #090d16;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.18);
+        border: 2px solid rgba(212, 175, 55, 0.4);
+    }
+    #camera-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    .hud-overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 1.25rem;
+    }
+    .hud-corner {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-color: #D4AF37;
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+        border-style: solid;
+        pointer-events: none;
+    }
+    .hud-corner.tl { top: 16px; left: 16px; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
+    .hud-corner.tr { top: 16px; right: 16px; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
+    .hud-corner.bl { bottom: 16px; left: 16px; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
+    .hud-corner.br { bottom: 16px; right: 16px; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
+
+    /* Animated Laser Scan Beam */
+    .hud-laser {
+        position: absolute;
+        left: 5%;
+        right: 5%;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #10B981, #FFFFFF, #10B981, transparent);
+        box-shadow: 0 0 14px #10B981, 0 0 28px rgba(16, 185, 129, 0.6);
+        opacity: 0.95;
+        animation: scanMove 2.6s ease-in-out infinite alternate;
+        display: none;
+    }
+    @keyframes scanMove {
+        0% { top: 15%; opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { top: 85%; opacity: 0.4; }
+    }
+
+    /* Target Reticle */
+    .hud-target {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 140px;
+        height: 140px;
+        border: 1px dashed rgba(212, 175, 55, 0.4);
+        border-radius: 12px;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hud-target::after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        background: #10B981;
+        border-radius: 50%;
+        box-shadow: 0 0 8px #10B981;
+    }
+
+    /* Camera Placeholder State */
+    .camera-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        padding: 2rem;
+        text-align: center;
+        background: #090d16;
+    }
+
+    /* Dropzone for File Mode */
+    .dropzone-scanner {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 3rem 1.5rem;
+        text-align: center;
+        background: var(--bg-surface-alt);
+        cursor: pointer;
+        transition: all var(--transition-base);
+    }
+    .dropzone-scanner:hover, .dropzone-scanner.dragover {
+        border-color: var(--color-primary);
+        background: rgba(37, 99, 235, 0.05);
+        box-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+    }
+    .scan-file-preview {
+        display: none;
+        max-width: 280px;
+        margin: 1.5rem auto 0 auto;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+    }
+
+    /* Confidence Gauge */
+    .gauge-container {
+        margin: 1.5rem 0;
+        background: var(--bg-surface-alt);
+        padding: 1.25rem;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-color);
+    }
+    .gauge-track {
+        height: 12px;
+        background: var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+        position: relative;
+    }
+    .gauge-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: 6px;
+        transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease;
+    }
+    .gauge-fill.verified { background: linear-gradient(90deg, #10b981, #059669); }
+    .gauge-fill.uncertain { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .gauge-fill.no-match { background: linear-gradient(90deg, #ef4444, #dc2626); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; margin: 0 auto; padding-bottom: 2rem;">
+    <!-- Page Header -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-info" style="margin-bottom: 0.75rem;">Phase 4: Two-Tier Recognition Engine</span>
+        <h1 style="font-size: 2.3rem; font-weight: 800; letter-spacing: -0.02em;">Optical Vault Scanner</h1>
+        <p style="color: var(--text-secondary); font-size: 1rem; max-width: 580px; margin: 0.5rem auto 0 auto;">
+            Scan a physical or digital image to identify it against the Optical Vault. Fast pHash filter followed by sub-pixel OpenCV ORB verification.
+        </p>
+    </div>
+
+    <!-- Mode Switcher Tabs -->
+    <div class="scanner-tabs">
+        <button type="button" class="scanner-tab-btn active" id="tab-camera" onclick="switchScannerMode('camera')">
+            <span>📷 Live Camera</span>
+        </button>
+        <button type="button" class="scanner-tab-btn" id="tab-upload" onclick="switchScannerMode('upload')">
+            <span>📁 Upload Image</span>
+        </button>
+    </div>
+
+    <!-- SCANNER CONTAINER -->
+    <div class="card vault-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+        
+        <!-- SECTION 1: LIVE WEBRTC CAMERA SCANNER -->
+        <div id="section-camera-scanner">
+            <div class="viewfinder-wrapper">
+                <video id="camera-video" autoplay playsinline muted></video>
+                
+                <!-- HUD Overlays -->
+                <div class="hud-overlay">
+                    <div class="hud-corner tl"></div>
+                    <div class="hud-corner tr"></div>
+                    <div class="hud-corner bl"></div>
+                    <div class="hud-corner br"></div>
+                    <div class="hud-target"></div>
+                    <div class="hud-laser" id="hud-laser"></div>
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; z-index: 10;">
+                        <span class="badge" id="camera-status-badge" style="background: rgba(0,0,0,0.6); color: #94a3b8; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(4px);">
+                            ● Standby
+                        </span>
+                        <button type="button" id="btn-camera-flip" onclick="toggleCameraFacing()" 
+                                style="display: none; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; width: 34px; height: 34px; cursor: pointer; align-items: center; justify-content: center; backdrop-filter: blur(4px);"
+                                title="Switch Front/Rear Camera">
+                            🔄
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Standby Placeholder -->
+                <div class="camera-placeholder" id="camera-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 1rem;">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    <div style="font-weight: 700; font-size: 1.1rem; color: #f8fafc; margin-bottom: 0.35rem;">
+                        Optical Camera Standby
+                    </div>
+                    <div style="font-size: 0.85rem; max-width: 320px; line-height: 1.4; color: #94a3b8; margin-bottom: 1.25rem;">
+                        Position any registered image, logo, or package inside the HUD target reticle.
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="startCamera()" style="padding: 0.65rem 1.5rem;">
+                        Activate Camera Stream
+                    </button>
+                </div>
+            </div>
+
+            <!-- Camera Controls Toolbar -->
+            <div style="display: flex; gap: 0.75rem; justify-content: center; margin-top: 1.25rem; flex-wrap: wrap;">
+                <button type="button" id="btn-capture" class="btn btn-primary" onclick="captureAndIdentify()" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;" disabled>
+                    <span>🎯 Capture & Identify</span>
+                </button>
+                <button type="button" id="btn-stop-camera" class="btn btn-outline" onclick="stopCamera()" style="display: none; padding: 0.75rem 1.25rem;">
+                    Stop Camera
+                </button>
+            </div>
+            
+            <!-- Hidden Canvas for Frame Capture -->
+            <canvas id="capture-canvas" style="display: none;"></canvas>
+        </div>
+
+        <!-- SECTION 2: FILE UPLOAD SCANNER (FALLBACK) -->
+        <div id="section-upload-scanner" style="display: none;">
+            <div class="dropzone-scanner" id="scanner-dropzone" onclick="document.getElementById('scanner-file-input').click()">
+                <input type="file" id="scanner-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleScannerFileSelect(this.files)">
+                
+                <div id="scanner-drop-prompt">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary); margin-bottom: 0.75rem;">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <path d="M11 8v6M8 11h6"/>
+                    </svg>
+                    <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem;">
+                        Click to select image or drag & drop here
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        JPG, PNG, or WEBP (Max: 5MB)
+                    </div>
+                </div>
+
+                <div class="scan-file-preview" id="scanner-preview-box">
+                    <img id="scanner-file-preview-img" style="width: 100%; max-height: 220px; object-fit: contain; background: #000; display: block;" alt="Scanner Preview">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: center; margin-top: 1.25rem;">
+                <button type="button" id="btn-analyze-upload" class="btn btn-primary" onclick="analyzeUploadedFile()" style="padding: 0.75rem 1.75rem; font-size: 0.95rem;" disabled>
+                    <span>⚡ Analyze Image &rarr;</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scanner Error Notice -->
+        <div id="scanner-error" style="display: none; margin-top: 1.25rem; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--status-error-bg); color: var(--status-error); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem; text-align: center;"></div>
+    </div>
+
+    <!-- RECOGNITION RESULTS PANEL (Initially Hidden) -->
+    <div id="results-panel" class="card vault-card" style="display: none; margin-bottom: 2rem;">
+        <!-- Confidence Gauge Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                    Computer Vision Verdict
+                </span>
+                <div style="display: flex; align-items: center; gap: 0.6rem; margin-top: 0.25rem;">
+                    <span id="verdict-badge" class="badge">--</span>
+                    <span id="verdict-label" style="font-size: 1.15rem; font-weight: 800;">--</span>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">
+                    Confidence Score
+                </span>
+                <div id="confidence-percentage-text" style="font-family: var(--font-mono); font-size: 1.5rem; font-weight: 800; color: var(--color-primary);">
+                    0.0%
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Meter Track -->
+        <div class="gauge-container">
+            <div class="gauge-track">
+                <div id="gauge-bar" class="gauge-fill"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; font-family: var(--font-mono);">
+                <span>0% (No Match)</span>
+                <span>65% (Uncertain Threshold)</span>
+                <span>85% (Verified Threshold)</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        <p id="verdict-message" style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.5;"></p>
+
+        <!-- STATE A: VERIFIED MATCH DETAILS -->
+        <div id="match-details-card" style="display: none; background: var(--bg-surface-alt); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <span class="badge badge-success" style="margin-bottom: 0.35rem;">Authentic Optical Match</span>
+                    <h3 id="match-title" style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.25rem;">--</h3>
+                    <div id="match-company" style="font-size: 0.9rem; color: var(--color-primary); font-weight: 600;">--</div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Public Optical UID</span>
+                    <div id="match-uid" style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: var(--text-primary); letter-spacing: 0.05em;">
+                        --
+                    </div>
+                </div>
+            </div>
+
+            <p id="match-desc" style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.25rem; line-height: 1.5;">--</p>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a id="match-website-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+                    🌐 Visit Website
+                </a>
+                <a id="match-public-view-link" href="#" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.45rem 1rem;">
+                    View Public Information &rarr;
+                </a>
+            </div>
+        </div>
+
+        <!-- STATE B: UNCERTAIN GUIDANCE -->
+        <div id="uncertain-guidance-card" style="display: none; background: rgba(245, 158, 11, 0.08); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid rgba(245, 158, 11, 0.3); margin-bottom: 1.5rem;">
+            <div style="font-weight: 700; color: var(--status-warn); font-size: 0.95rem; margin-bottom: 0.5rem;">
+                💡 Scan Optimization Tips:
+            </div>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 1.25rem; line-height: 1.6;">
+                <li>Ensure the complete graphic, logo, or artwork is clearly inside the frame.</li>
+                <li>Avoid extreme lighting reflections, gloss glare, or deep shadows.</li>
+                <li>Hold the camera steadily perpendicular to the image to reduce perspective skew.</li>
+            </ul>
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <button type="button" class="btn btn-outline" onclick="resetScannerView()">
+                Scan Another Image
+            </button>
+        </div>
+    </div>
+
+    <!-- ZERO-TRUST ARCHITECTURE NOTICE -->
+    <div style="background: var(--bg-surface-alt); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1rem; align-items: flex-start;">
+        <div style="font-size: 1.3rem; line-height: 1;">🔒</div>
+        <div>
+            <strong style="color: var(--text-primary);">Zero-Trust Optical Security:</strong>
+            Scanning an image publicly queries ONLY registered public metadata. Highly sensitive private records remain locked in the cryptographic vault and require explicit role-based access control (RBAC) authentication.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Scanner State
+    let activeMode = 'camera';
+    let mediaStream = null;
+    let currentFacingMode = 'environment';
+    let uploadedFile = null;
+
+    // Mode Switcher
+    function switchScannerMode(mode) {
+        activeMode = mode;
+        const tabCam = document.getElementById('tab-camera');
+        const tabUp = document.getElementById('tab-upload');
+        const secCam = document.getElementById('section-camera-scanner');
+        const secUp = document.getElementById('section-upload-scanner');
+
+        if (mode === 'camera') {
+            tabCam.classList.add('active');
+            tabUp.classList.remove('active');
+            secCam.style.display = 'block';
+            secUp.style.display = 'none';
+        } else {
+            tabCam.classList.remove('active');
+            tabUp.classList.add('active');
+            secCam.style.display = 'none';
+            secUp.style.display = 'block';
+            stopCamera();
+        }
+        hideError();
+    }
+
+    // Camera Management
+    async function startCamera() {
+        hideError();
+        const video = document.getElementById('camera-video');
+        const placeholder = document.getElementById('camera-placeholder');
+        const laser = document.getElementById('hud-laser');
+        const statusBadge = document.getElementById('camera-status-badge');
+        const btnCapture = document.getElementById('btn-capture');
+        const btnStop = document.getElementById('btn-stop-camera');
+        const btnFlip = document.getElementById('btn-camera-flip');
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showError("WebRTC Camera access is not supported by this browser. Please use the Upload Image tab.");
+            return;
+        }
+
+        try {
+            if (mediaStream) {
+                stopCamera();
+            }
+
+            const constraints = {
+                video: {
+                    facingMode: { ideal: currentFacingMode },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: false
+            };
+
+            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = mediaStream;
+
+            video.onloadedmetadata = () => {
+                video.play();
+                placeholder.style.display = 'none';
+                laser.style.display = 'block';
+                statusBadge.textContent = '● Live Feed';
+                statusBadge.style.color = '#06b6d4';
+                statusBadge.style.borderColor = '#06b6d4';
+                btnCapture.disabled = false;
+                btnStop.style.display = 'inline-flex';
+                btnFlip.style.display = 'inline-flex';
+            };
+        } catch (err) {
+            console.error("Camera access failed:", err);
+            statusBadge.textContent = '● Access Blocked';
+            statusBadge.style.color = '#ef4444';
+            showError("Could not access camera (" + err.message + "). Please grant browser camera permissions or switch to Upload mode.");
+        }
+    }
+
+    function stopCamera() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+        const video = document.getElementById('camera-video');
+        video.srcObject = null;
+        document.getElementById('camera-placeholder').style.display = 'flex';
+        document.getElementById('hud-laser').style.display = 'none';
+        const statusBadge = document.getElementById('camera-status-badge');
+        statusBadge.textContent = '● Standby';
+        statusBadge.style.color = '#94a3b8';
+        statusBadge.style.borderColor = 'rgba(255,255,255,0.2)';
+        document.getElementById('btn-capture').disabled = true;
+        document.getElementById('btn-stop-camera').style.display = 'none';
+        document.getElementById('btn-camera-flip').style.display = 'none';
+    }
+
+    function toggleCameraFacing() {
+        currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+        startCamera();
+    }
+
+    // Capture Frame from Camera
+    async function captureAndIdentify() {
+        if (!mediaStream) return;
+        const video = document.getElementById('camera-video');
+        const canvas = document.getElementById('capture-canvas');
+        const btn = document.getElementById('btn-capture');
+
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        btn.disabled = true;
+        btn.innerHTML = '<span>⚡ Running Computer Vision Pipeline...</span>';
+        hideError();
+
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                showError("Failed to capture image frame from video feed.");
+                btn.disabled = false;
+                btn.innerHTML = '<span>🎯 Capture & Identify</span>';
+                return;
+            }
+            await sendIdentifyRequest(blob, "scan_capture.jpg");
+            btn.disabled = false;
+            btn.innerHTML = '<span>🎯 Capture & Identify</span>';
+        }, 'image/jpeg', 0.95);
+    }
+
+    // File Upload Handling
+    const dropzone = document.getElementById('scanner-dropzone');
+    ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('dragover');
+        });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dragover');
+        });
+    });
+    dropzone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) handleScannerFileSelect(files);
+    });
+
+    function handleScannerFileSelect(files) {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            showError("Invalid file type. Please upload a JPG, PNG, or WEBP image.");
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showError("File size exceeds 5MB limit.");
+            return;
+        }
+
+        uploadedFile = file;
+        hideError();
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('scanner-file-preview-img').src = e.target.result;
+            document.getElementById('scanner-drop-prompt').style.display = 'none';
+            document.getElementById('scanner-preview-box').style.display = 'block';
+            document.getElementById('btn-analyze-upload').disabled = false;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    async function analyzeUploadedFile() {
+        if (!uploadedFile) return;
+        const btn = document.getElementById('btn-analyze-upload');
+        btn.disabled = true;
+        btn.innerHTML = '<span>⚡ Running Computer Vision Pipeline...</span>';
+        hideError();
+
+        await sendIdentifyRequest(uploadedFile, uploadedFile.name);
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Analyze Image &rarr;</span>';
+    }
+
+    // Send Image to Identification Endpoint
+    async function sendIdentifyRequest(blobOrFile, filename) {
+        const formData = new FormData();
+        formData.append('file', blobOrFile, filename);
+
+        try {
+            const res = await fetch('/api/v1/scanner/identify', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.detail || "Scanning failed.");
+            }
+
+            renderRecognitionResult(data);
+        } catch (err) {
+            showError(err.message);
+        }
+    }
+
+    // Render Verdict and Metrics
+    function renderRecognitionResult(data) {
+        const panel = document.getElementById('results-panel');
+        const verdictBadge = document.getElementById('verdict-badge');
+        const verdictLabel = document.getElementById('verdict-label');
+        const confidenceText = document.getElementById('confidence-percentage-text');
+        const gaugeBar = document.getElementById('gauge-bar');
+        const messageText = document.getElementById('verdict-message');
+        const matchCard = document.getElementById('match-details-card');
+        const guideCard = document.getElementById('uncertain-guidance-card');
+
+        panel.style.display = 'block';
+        confidenceText.textContent = data.confidence_percentage.toFixed(1) + '%';
+        gaugeBar.style.width = Math.min(100, Math.max(0, data.confidence_percentage)) + '%';
+        messageText.textContent = data.message;
+
+        // Reset classes
+        gaugeBar.className = 'gauge-fill';
+        verdictBadge.className = 'badge';
+
+        if (data.verdict === 'VERIFIED_MATCH') {
+            verdictBadge.classList.add('badge-success');
+            verdictBadge.textContent = 'VERIFIED';
+            verdictLabel.textContent = 'Verified Optical Match';
+            verdictLabel.style.color = 'var(--status-success)';
+            gaugeBar.classList.add('verified');
+
+            // Populate Match Details
+            if (data.match) {
+                matchCard.style.display = 'block';
+                guideCard.style.display = 'none';
+
+                document.getElementById('match-title').textContent = data.match.title || 'Registered Optical Key';
+                document.getElementById('match-company').textContent = data.match.company_name ? ('By ' + data.match.company_name) : 'Independent Image Key';
+                document.getElementById('match-uid').textContent = data.match.public_image_uid;
+                document.getElementById('match-desc').textContent = data.match.description || 'No public description provided by the image owner.';
+
+                const webLink = document.getElementById('match-website-link');
+                if (data.match.website_url) {
+                    webLink.href = data.match.website_url;
+                    webLink.style.display = 'inline-flex';
+                } else {
+                    webLink.style.display = 'none';
+                }
+
+                const publicLink = document.getElementById('match-public-view-link');
+                publicLink.href = '/public/' + data.match.public_image_uid;
+            }
+        } else if (data.verdict === 'UNCERTAIN') {
+            verdictBadge.classList.add('badge-warning');
+            verdictBadge.textContent = 'UNCERTAIN';
+            verdictLabel.textContent = 'Partial / Uncertain Match';
+            verdictLabel.style.color = 'var(--status-warn)';
+            gaugeBar.classList.add('uncertain');
+
+            matchCard.style.display = 'none';
+            guideCard.style.display = 'block';
+        } else {
+            verdictBadge.classList.add('badge-danger');
+            verdictBadge.textContent = 'NO MATCH';
+            verdictLabel.textContent = 'No Optical Match Found';
+            verdictLabel.style.color = 'var(--status-error)';
+            gaugeBar.classList.add('no-match');
+
+            matchCard.style.display = 'none';
+            guideCard.style.display = 'none';
+        }
+
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function resetScannerView() {
+        document.getElementById('results-panel').style.display = 'none';
+        if (activeMode === 'camera' && !mediaStream) {
+            startCamera();
+        }
+    }
+
+    function showError(msg) {
+        const err = document.getElementById('scanner-error');
+        err.style.display = 'block';
+        err.textContent = msg;
+    }
+
+    function hideError() {
+        document.getElementById('scanner-error').style.display = 'none';
+    }
+
+    // Auto-stop camera on page leave
+    window.addEventListener('beforeunload', () => {
+        stopCamera();
+    });
+</script>
+{% endblock %}

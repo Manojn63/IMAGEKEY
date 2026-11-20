@@ -1,0 +1,53 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+.venv/
+env/
+
+# Environment variables & local secrets
+.env
+.env.local
+.env.*.local
+
+# Databases & local storage
+*.sqlite
+*.sqlite3
+*.db
+imagekey_local.db
+
+# User Uploads (preserve empty directory structure only)
+uploads/*
+!uploads/.gitkeep
+!uploads/pdfs/
+uploads/pdfs/*
+!uploads/pdfs/.gitkeep
+
+# Executables & Local Tunnels
+*.exe
+ngrok.exe
+cloudflared.exe
+
+# Logs & diagnostic outputs
+*.log
+cloudflared.log
+
+# IDEs & Editor metadata
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store

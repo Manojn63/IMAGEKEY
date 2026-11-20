@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+
+{% block title %}IMAGEKEY | Register Image & Generate Optical Key{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dropzone {
+        border: 2px dashed var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: 2.5rem 1.5rem;
+        text-align: center;
+        background: var(--bg-surface-alt);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        position: relative;
+    }
+    .dropzone:hover, .dropzone.dragover {
+        border-color: var(--color-primary);
+        background: rgba(37, 99, 235, 0.05);
+        box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
+    }
+    .preview-container {
+        display: none;
+        position: relative;
+        max-width: 320px;
+        margin: 1.5rem auto 0 auto;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border-color);
+    }
+    .preview-img {
+        width: 100%;
+        max-height: 240px;
+        object-fit: contain;
+        background: #000;
+        display: block;
+    }
+    .remove-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+    }
+    .remove-btn:hover {
+        background: var(--status-error);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 680px; margin: 0 auto;">
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-info" style="margin-bottom: 0.75rem;">Phase 3: Visual Vault Anchor</span>
+        <h1 style="font-size: 2.2rem; font-weight: 800; letter-spacing: -0.02em;">Register & Hash Image</h1>
+        <p style="color: var(--text-secondary); font-size: 1rem; margin-top: 0.5rem;">
+            Upload your logo, flyer, or product packaging. Our vision pipeline will strip EXIF metadata, compute perceptual hashes (pHash/dHash), and generate your cryptographically unique Optical ID.
+        </p>
+    </div>
+
+    <!-- SUCCESS VAULT CARD (Hidden initially) -->
+    <div id="success-card" class="card vault-card vault-unlocked" style="display: none; margin-bottom: 2rem; border-top: 4px solid var(--status-success);">
+        <div style="text-align: center; padding: 1rem 0;">
+            <div style="display: inline-flex; width: 60px; height: 60px; border-radius: 50%; background: var(--status-success-bg); color: var(--status-success); align-items: center; justify-content: center; margin-bottom: 1rem;">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 6 9 17l-5-5"/>
+                </svg>
+            </div>
+            <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Image Registered Successfully!</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.5rem;">
+                Your image has been hashed and anchored to the IMAGEKEY recognition database.
+            </p>
+
+            <!-- Public Image UID Display -->
+            <div style="background: var(--bg-surface); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); max-width: 440px; margin: 0 auto 1.5rem auto;">
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.35rem;">
+                    Public Image Identifier (Non-Secret)
+                </div>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem;">
+                    <span id="registered-uid" style="font-family: var(--font-mono); font-size: 1.6rem; font-weight: 800; color: var(--color-primary); letter-spacing: 0.05em;">
+                        IMG-XXXXXXXX
+                    </span>
+                    <button class="btn btn-outline" type="button" onclick="copyUID()" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                        📋 Copy
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hash Diagnostics -->
+            <div style="display: flex; justify-content: center; gap: 1.5rem; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div><strong>pHash:</strong> <span id="registered-phash" style="font-family: var(--font-mono);">--</span></div>
+                <div><strong>ORB Descriptors:</strong> <span id="registered-orb" class="badge badge-success">Extracted (500 pts)</span></div>
+            </div>
+
+            <!-- One-Click Mobile Sharing & Download Actions -->
+            <div style="background: var(--bg-surface-alt); padding: 1.25rem; border-radius: var(--radius-lg); border: 1px solid var(--border-color); max-width: 480px; margin: 0 auto 1.5rem auto;">
+                <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    One-Click Actions & Mobile Sharing
+                </div>
+                <div class="action-toolbar" style="justify-content: center;">
+                    <button type="button" class="btn-action btn-action-primary" onclick="handleDownloadCurrent()">
+                        📥 Download Image
+                    </button>
+                    <button type="button" class="btn-action" onclick="handleCopyCurrentInfo()">
+                        📋 Copy Info
+                    </button>
+                    <button type="button" class="btn-action" onclick="handleShareCurrent()">
+                        📲 Share Image & Info
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary" onclick="resetForm()">
+                    Register Another Image
+                </button>
+                <a href="/dashboard" class="btn btn-outline">
+                    Go to Dashboard &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN UPLOAD FORM -->
+    <div id="upload-form-card" class="card vault-card">
+        <!-- Auth Warning (if no token found) -->
+        <div id="auth-warning" style="display: none; padding: 1rem; border-radius: var(--radius-md); background: var(--status-warn-bg); color: var(--status-warn); border: 1px solid rgba(245, 158, 11, 0.3); margin-bottom: 1.5rem; font-size: 0.9rem;">
+            ⚠️ <strong>Sign-in Required:</strong> Only registered Image Owners or Administrators can register new images.
+            <a href="/auth/login" style="font-weight: 700; text-decoration: underline; margin-left: 0.5rem;">Sign In Here</a>
+        </div>
+
+        <form id="image-upload-form" onsubmit="handleImageUpload(event)">
+            <!-- Dropzone -->
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('image-file-input').click()">
+                <input type="file" id="image-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;" onchange="handleFileSelect(this.files)">
+                
+                <div id="dropzone-prompt">
+                    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color: var(--color-primary); margin-bottom: 0.75rem;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem;">
+                        Click to upload or drag & drop image
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-muted);">
+                        PNG, JPG, or WEBP (Max: 5MB) &middot; EXIF stripped automatically
+                    </div>
+                </div>
+
+                <!-- Preview Box -->
+                <div class="preview-container" id="preview-box">
+                    <img id="image-preview" class="preview-img" alt="Upload Preview">
+                    <button type="button" class="remove-btn" onclick="clearPreview(event)" title="Remove image">&times;</button>
+                </div>
+            </div>
+
+            <!-- Form Details -->
+            <div style="display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.5rem;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
+                        Image Title / Name <span style="color: var(--status-error);">*</span>
+                    </label>
+                    <input type="text" id="image-title" required placeholder="e.g. Acme Tech Corporation Official Logo" 
+                           style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem;">
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem;">
+                        Public Description (Optional)
+                    </label>
+                    <textarea id="image-desc" rows="3" placeholder="Brief context visible to anyone who scans or verifies this image..." 
+                              style="width: 100%; padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-body); color: var(--text-primary); font-size: 0.95rem; resize: vertical;"></textarea>
+                </div>
+
+                <!-- Error Notification -->
+                <div id="upload-error" style="display: none; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: var(--status-error-bg); color: var(--status-error); border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem;"></div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="btn-upload-submit" class="btn btn-primary" style="padding: 0.85rem; font-size: 1rem; width: 100%;">
+                    <span>🔒 Register & Extract Perceptual Fingerprint &rarr;</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let selectedFile = null;
+    let registeredData = null;
+
+    // Check login status on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('imagekey_token');
+        const authWarning = document.getElementById('auth-warning');
+        if (!token && !document.cookie.includes('imagekey_session')) {
+            authWarning.style.display = 'block';
+        }
+    });
+
+    // Drag and Drop handlers
+    const dropzone = document.getElementById('dropzone');
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('dragover');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dragover');
+        });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            handleFileSelect(files);
+        }
+    });
+
+    function handleFileSelect(files) {
+        if (!files || files.length === 0) return;
+        const file = files[0];
+
+        // Validate MIME type
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            showError("Invalid file type. Please upload a JPG, PNG, or WEBP image.");
+            return;
+        }
+
+        // Validate 5MB limit
+        if (file.size > 5 * 1024 * 1024) {
+            showError("File size exceeds 5MB limit. Please choose a smaller image.");
+            return;
+        }
+
+        selectedFile = file;
+        hideError();
+
+        // Render preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('image-preview').src = e.target.result;
+            document.getElementById('dropzone-prompt').style.display = 'none';
+            document.getElementById('preview-box').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function clearPreview(e) {
+        if (e) e.stopPropagation();
+        selectedFile = null;
+        document.getElementById('image-file-input').value = '';
+        document.getElementById('image-preview').src = '';
+        document.getElementById('preview-box').style.display = 'none';
+        document.getElementById('dropzone-prompt').style.display = 'block';
+    }
+
+    function showError(msg) {
+        const errBox = document.getElementById('upload-error');
+        errBox.style.display = 'block';
+        errBox.textContent = msg;
+    }
+
+    function hideError() {
+        document.getElementById('upload-error').style.display = 'none';
+    }
+
+    function copyUID() {
+        const uid = document.getElementById('registered-uid').textContent.trim();
+        copyText(uid, 'Copied Image UID: ' + uid);
+    }
+
+    function handleDownloadCurrent() {
+        if (!registeredData || !registeredData.public_image_uid) return;
+        downloadImage(registeredData.public_image_uid);
+    }
+
+    function handleCopyCurrentInfo() {
+        if (!registeredData || !registeredData.public_image_uid) return;
+        const shareUrl = `${window.location.origin}/public/${registeredData.public_image_uid}`;
+        const title = registeredData.title || 'Registered Optical Key';
+        const desc = registeredData.description ? registeredData.description + '\n' : '';
+        const text = `${title}\n${desc}\nView verified optical details:\n${shareUrl}`;
+        copyText(text, 'Copied title, description & public link!');
+    }
+
+    function handleShareCurrent() {
+        if (!registeredData || !registeredData.public_image_uid) return;
+        shareImageAndInfo({
+            uid: registeredData.public_image_uid,
+            title: registeredData.title,
+            description: registeredData.description
+        });
+    }
+
+    function resetForm() {
+        clearPreview();
+        registeredData = null;
+        document.getElementById('image-title').value = '';
+        document.getElementById('image-desc').value = '';
+        document.getElementById('success-card').style.display = 'none';
+        document.getElementById('upload-form-card').style.display = 'block';
+    }
+
+    async function handleImageUpload(e) {
+        e.preventDefault();
+        if (!selectedFile) {
+            showError("Please select or drop an image first.");
+            return;
+        }
+
+        const btn = document.getElementById('btn-upload-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<span>⚡ Sanitizing EXIF & Extracting Descriptors...</span>';
+        hideError();
+
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('title', document.getElementById('image-title').value);
+        const desc = document.getElementById('image-desc').value;
+        if (desc) formData.append('description', desc);
+
+        const token = localStorage.getItem('imagekey_token');
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = 'Bearer ' + token;
+        }
+
+        try {
+            const res = await fetch('/api/v1/images/register', {
+                method: 'POST',
+                headers: headers,
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+                if (res.status === 401) {
+                    throw new Error("Authentication required. Please sign in as an Owner or Admin.");
+                } else if (res.status === 403) {
+                    throw new Error("Access Denied. Only Image Owners or Admins can register images.");
+                }
+                throw new Error(data.detail || "Image registration failed.");
+            }
+
+            // Display success card
+            registeredData = data;
+            document.getElementById('registered-uid').textContent = data.public_image_uid;
+            document.getElementById('registered-phash').textContent = data.phash;
+            document.getElementById('registered-orb').textContent = data.has_orb_descriptors ? "Extracted (500 pts)" : "pHash Only";
+
+            document.getElementById('upload-form-card').style.display = 'none';
+            document.getElementById('success-card').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🔒 Register & Extract Perceptual Fingerprint &rarr;</span>';
+        }
+    }
+</script>
+{% endblock %}
