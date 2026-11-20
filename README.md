@@ -74,6 +74,7 @@ All 10 user-facing and administration pages are built using the **"Optical Vault
 | **8** | `GET /vault/{uid}` | **Protected Private Vault** | Authorized | Locked shield state for unauthorized guests; unlocks confidential notes & JSON store. |
 | **9** | `GET /images/{uid}/permissions` | **Permission Manager** | Owner / Admin | Granular access control by email (`view_private` / `edit`), expiry dates, one-click revoke. |
 | **10** | `GET /admin` | **Admin Operations Hub** | Admin Only | Global platform KPIs, user moderation, image catalog suspension, and audit logs. |
+| **11** | `GET /demo/upi` | **Simulated UPI Demo** | Public (Test) | 4-step mock UPI flow, desktop side-by-side split-mode drawer, PIN keypad & simulated receipt download. |
 
 ---
 
@@ -154,7 +155,7 @@ Open your browser:
 
 ## 🧪 Automated QA & Verification Suite
 
-To execute all 45 automated integration, security, and unit tests:
+To execute all 53 automated integration, security, and unit tests:
 
 ```powershell
 .\venv\Scripts\pytest.exe tests/ -v
@@ -162,12 +163,29 @@ To execute all 45 automated integration, security, and unit tests:
 
 ### Test Suite Summary:
 * `tests/test_auth.py` (4 tests) — Registration, login, invalid JWT rejection, cookie auth.
-* `tests/test_cors_and_static.py` (4 tests) — CORS whitelist, static assets, auth templates.
-* `tests/test_health.py` (3 tests) — Landing page, health API, `/health` alias.
-* `tests/test_images.py` (6 tests) — Owner upload, viewer rejection, 5MB limits, EXIF stripping.
+* `tests/test_cors_and_static.py` (5 tests) — CORS whitelist, static assets, auth templates, PWA manifest.
+* `tests/test_health.py` (5 tests) — Landing page, health API, `/health` alias, database URL normalization, simulated UPI demo view.
+* `tests/test_feature_upgrade.py` (4 tests) — Auto-redirect smart playback, PDF attachment upload/retrieval, permanent DB/storage deletion, shared-with-me permissions.
+* `tests/test_images.py` (7 tests) — Owner upload, viewer rejection, 5MB limits, EXIF stripping, download endpoint.
 * `tests/test_scanner.py` (7 tests) — Two-tier CV matching, compression tolerance, noise rejection.
 * `tests/test_public_info.py` (7 tests) — Anonymous public display, owner updates, XSS URL rejection.
 * `tests/test_private_vault.py` (8 tests) — Zero-trust access controls, expiration, permission revocation.
 * `tests/test_admin_and_security.py` (6 tests) — Admin RBAC, moderation, security headers, rate limiting.
 
-**Total: 45 passed out of 45 tests (100% pass rate).**
+**Total: 53 passed out of 53 tests (100% pass rate).**
+
+---
+
+## ☁️ Free Cloud Deployment (Render.com / Docker)
+
+The platform is pre-configured with a universal `render.yaml` blueprint and multi-stage `Dockerfile`:
+
+1. **Deploy to Render (Free Tier):**
+   - Connect your GitHub repository: `https://github.com/Manojn63/IMAGEKEY`
+   - In Render Dashboard, click **New > Blueprint** and select this repo.
+   - Render automatically reads `render.yaml`, provisions a free web service, generates `SECRET_KEY`, and mounts persistent storage.
+2. **Docker Self-Hosting:**
+   ```bash
+   docker build -t imagekey:latest .
+   docker run -p 8000:8000 -v imagekey_data:/app/data -v imagekey_uploads:/app/uploads imagekey:latest
+   ```
