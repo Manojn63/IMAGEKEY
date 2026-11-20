@@ -32,8 +32,10 @@ async def lifespan(app: FastAPI):
     """Application lifecycle events: startup and shutdown."""
     logger.info("Initializing %s in %s environment...", settings.APP_NAME, settings.ENVIRONMENT)
 
-    # Ensure uploads directory exists
+    # Ensure data and upload directories exist
+    Path("./data").mkdir(parents=True, exist_ok=True)
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    (settings.UPLOAD_DIR / "pdfs").mkdir(parents=True, exist_ok=True)
 
     # Test database connectivity
     db_check = await check_db_connection()

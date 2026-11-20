@@ -33,3 +33,25 @@ async def test_root_health_alias(client: AsyncClient):
     assert data["app"] == "IMAGEKEY"
     assert "database" in data
     assert data["status"] in ("ok", "degraded")
+
+
+def test_database_url_normalization():
+    """Verify cloud host URL conversions for production and free hosting."""
+    from app.core.database import normalize_database_url
+
+    # 1. Standard cloud postgres:// conversion
+    render_url = "postgres://user:password@dpg-host.render.com:5432/imagekey_db"
+    assert normalize_database_url(render_url) == "postgresql+asyncpg://user:password@dpg-host.render.com:5432/imagekey_db"
+
+    # 2. Standard postgresql:// conversion
+    neon_url = "postgresql://user:password@ep-cool.neon.tech/neondb"
+    assert normalize_database_url(neon_url) == "postgresql+asyncpg://user:password@ep-cool.neon.tech/neondb"
+
+    # 3. Standard sqlite:// conversion
+    sqlite_url = "sqlite:///./data/imagekey.db"
+    assert normalize_database_url(sqlite_url) == "sqlite+aiosqlite:///./data/imagekey.db"
+
+    # 4. Graceful default fallback when empty or None
+    assert normalize_database_url(None) == "sqlite+aiosqlite:///./data/imagekey.db"
+    assert normalize_database_url("") == "sqlite+aiosqlite:///./data/imagekey.db"
+    assert normalize_database_url("   ") == "sqlite+aiosqlite:///./data/imagekey.db"

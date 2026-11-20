@@ -18,6 +18,8 @@ env/
 *.sqlite3
 *.db
 imagekey_local.db
+data/*
+!data/.gitkeep
 
 # User Uploads (preserve empty directory structure only)
 uploads/*

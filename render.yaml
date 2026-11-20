@@ -1,0 +1,35 @@
+# ==============================================================================
+# Render.com Blueprint Specification for IMAGEKEY
+# Free Web Service Tier (No Credit Card / Zero Cost Required)
+# ==============================================================================
+
+services:
+  - type: web
+    name: imagekey
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: "8000"
+      - key: DATABASE_URL
+        value: sqlite+aiosqlite:///./data/imagekey.db
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: CONFIDENCE_THRESHOLD_VERIFIED
+        value: "0.85"
+      - key: CONFIDENCE_THRESHOLD_UNCERTAIN
+        value: "0.65"
+      - key: HAMMING_DISTANCE_MAX
+        value: "10"
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "60"

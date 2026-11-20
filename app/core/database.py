@@ -1,6 +1,7 @@
 """Database Connection and Session Management."""
 
 import logging
+from pathlib import Path
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -13,10 +14,37 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Normalize sqlite URL for aiosqlite if sqlite is provided
-db_url = settings.DATABASE_URL
-if db_url.startswith("sqlite://"):
-    db_url = db_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+
+def normalize_database_url(url: str | None) -> str:
+    """
+    Normalize database connection URLs for async SQLAlchemy.
+    - If empty or None, defaults gracefully to local SQLite './data/imagekey.db'
+    - Converts standard cloud host URLs (postgres:// or postgresql://) to postgresql+asyncpg://
+    - Converts sqlite:// to sqlite+aiosqlite://
+    - Automatically creates parent directory for SQLite files if missing
+    """
+    if not url or not str(url).strip():
+        url = "sqlite+aiosqlite:///./data/imagekey.db"
+
+    clean_url = str(url).strip()
+    if clean_url.startswith("postgres://"):
+        clean_url = clean_url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif clean_url.startswith("postgresql://") and not clean_url.startswith("postgresql+"):
+        clean_url = clean_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif clean_url.startswith("sqlite://") and not clean_url.startswith("sqlite+"):
+        clean_url = clean_url.replace("sqlite://", "sqlite+aiosqlite://", 1)
+
+    if "sqlite" in clean_url:
+        raw_path = clean_url.split(":///")[-1]
+        if raw_path and not raw_path.startswith(":memory:"):
+            db_file = Path(raw_path)
+            db_file.parent.mkdir(parents=True, exist_ok=True)
+
+    return clean_url
+
+
+# Normalize database URL (handles Render, Neon, Supabase, Railway postgres:// & local sqlite)
+db_url = normalize_database_url(settings.DATABASE_URL)
 
 # Configure engine arguments dynamically based on database dialect
 engine_kwargs = {
