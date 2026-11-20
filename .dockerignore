@@ -1,0 +1,65 @@
+# Git
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Environment and secrets
+.env*
+*.local
+
+# Databases & local persistent storage
+data/*.db
+data/*.sqlite*
+*.db
+*.sqlite*
+imagekey_local.db
+
+# Uploads & local media files
+uploads/*
+!uploads/.gitkeep
+!uploads/pdfs/.gitkeep
+
+# Executables
+*.exe
+ngrok.exe
+cloudflared.exe
+
+# Testing & logs
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+cloudflared.log
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
