@@ -30,6 +30,14 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="/static/css/theme.css">
+    {% if request.query_params.get('embedded') == '1' %}
+    <style>
+        .navbar, .footer, .mobile-bottom-nav, .upi-demo-fab, #upiDrawerPanel, #upiDrawerBackdrop { display: none !important; }
+        body { padding-bottom: 0 !important; background: transparent; }
+        .main-content { padding: 0.5rem 0 !important; }
+        .container { max-width: 100% !important; padding: 0 0.5rem !important; }
+    </style>
+    {% endif %}
     {% block extra_head %}{% endblock %}
 </head>
 <body>
@@ -55,6 +63,7 @@
                     <li><a href="/register-image" class="nav-link {% if '/register' in request.url.path %}active{% endif %}">Register Image</a></li>
                     <li><a href="/dashboard" class="nav-link {% if '/dashboard' in request.url.path %}active{% endif %}">Dashboard</a></li>
                     <li><a href="/admin" class="nav-link {% if '/admin' in request.url.path %}active{% endif %}">Admin</a></li>
+                    <li><a href="/demo/upi" class="nav-link {% if '/demo/upi' in request.url.path %}active{% endif %}" style="color: #D4AF37; font-weight: 600;">⚡ UPI Demo</a></li>
                 </ul>
             </nav>
 
@@ -141,6 +150,79 @@
             <span class="mobile-nav-label">Vault</span>
         </a>
     </nav>
+
+    <!-- Floating Simulated UPI Demo Trigger Button -->
+    {% if request.url.path != '/demo/upi' and request.query_params.get('embedded') != '1' %}
+    <button class="upi-demo-fab" id="upiDemoFab" onclick="toggleUpiDrawer()" aria-label="Simulated UPI Demo" title="Open Simulated UPI Demo">
+        <span>💳</span>
+        <span>UPI Demo</span>
+    </button>
+
+    <!-- Slide-Over Drawer & Split-Pane Preview Container -->
+    <div class="upi-drawer-backdrop" id="upiDrawerBackdrop" onclick="closeUpiDrawer()"></div>
+    <aside class="upi-drawer-panel" id="upiDrawerPanel" aria-label="Simulated UPI Payment Drawer">
+        <div class="upi-drawer-header">
+            <div class="upi-drawer-title">
+                <span class="upi-badge-icon">💳</span>
+                <div>
+                    <strong>Simulated UPI Drawer</strong>
+                    <span class="upi-badge-pill">DEMO MODE</span>
+                </div>
+            </div>
+            <div class="upi-drawer-actions">
+                <button type="button" class="upi-btn-icon" id="upiSplitToggleBtn" onclick="toggleSplitPane()" title="Toggle Split View (Side-by-Side on Desktop)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="12" y1="3" x2="12" y2="21"/>
+                    </svg>
+                </button>
+                <a href="/demo/upi" target="_blank" class="upi-btn-icon" title="Open Full Screen in New Tab">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                </a>
+                <button type="button" class="upi-btn-icon close-btn" onclick="closeUpiDrawer()" title="Close Drawer">&times;</button>
+            </div>
+        </div>
+        <div class="upi-drawer-body">
+            <iframe id="upiDemoIframe" data-src="/demo/upi?embedded=1" title="UPI Simulation Frame" loading="lazy"></iframe>
+        </div>
+    </aside>
+
+    <script>
+        function toggleUpiDrawer() {
+            const drawer = document.getElementById('upiDrawerPanel');
+            const backdrop = document.getElementById('upiDrawerBackdrop');
+            const iframe = document.getElementById('upiDemoIframe');
+            if (!drawer) return;
+            const isOpen = drawer.classList.contains('open');
+            if (isOpen) {
+                closeUpiDrawer();
+            } else {
+                if (iframe && !iframe.src && iframe.dataset.src) {
+                    iframe.src = iframe.dataset.src;
+                }
+                drawer.classList.add('open');
+                if (backdrop) backdrop.classList.add('open');
+            }
+        }
+
+        function closeUpiDrawer() {
+            const drawer = document.getElementById('upiDrawerPanel');
+            const backdrop = document.getElementById('upiDrawerBackdrop');
+            if (drawer) drawer.classList.remove('open');
+            if (backdrop) backdrop.classList.remove('open');
+        }
+
+        function toggleSplitPane() {
+            const drawer = document.getElementById('upiDrawerPanel');
+            if (!drawer) return;
+            drawer.classList.toggle('split-mode');
+        }
+    </script>
+    {% endif %}
 
     <!-- Core Scripts -->
     <script src="/static/js/theme.js"></script>

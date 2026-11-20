@@ -259,6 +259,19 @@ async def admin_dashboard_page(request: Request):
     )
 
 
+@app.get("/demo/upi", response_class=HTMLResponse, summary="In-App Simulated UPI Demo View")
+async def upi_demo_page(request: Request):
+    """Render the Simulated UPI Payment Demonstration view."""
+    return templates.TemplateResponse(
+        request=request,
+        name="demo/upi.html",
+        context={
+            "app_name": settings.APP_NAME,
+            "environment": settings.ENVIRONMENT,
+        }
+    )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

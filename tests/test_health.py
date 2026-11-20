@@ -55,3 +55,24 @@ def test_database_url_normalization():
     assert normalize_database_url(None) == "sqlite+aiosqlite:///./data/imagekey.db"
     assert normalize_database_url("") == "sqlite+aiosqlite:///./data/imagekey.db"
     assert normalize_database_url("   ") == "sqlite+aiosqlite:///./data/imagekey.db"
+
+
+@pytest.mark.asyncio
+async def test_upi_demo_page(client: AsyncClient):
+    """Verify that the simulated UPI demo page renders correctly with disclaimer."""
+    response = await client.get("/demo/upi")
+    assert response.status_code == 200
+    assert "UPI" in response.text
+    assert "SIMULATED" in response.text.upper()
+    assert "REAL MONEY" in response.text.upper()
+
+    # Embedded variant
+    embedded_resp = await client.get("/demo/upi?embedded=1")
+    assert embedded_resp.status_code == 200
+    assert "UPI" in embedded_resp.text
+
+    # Verify home page includes UPI Demo drawer components
+    home_resp = await client.get("/")
+    assert home_resp.status_code == 200
+    assert "upiDrawerPanel" in home_resp.text
+    assert "upiDemoFab" in home_resp.text
