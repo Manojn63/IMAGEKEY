@@ -155,7 +155,7 @@ Open your browser:
 
 ## 🧪 Automated QA & Verification Suite
 
-To execute all 53 automated integration, security, and unit tests:
+To execute all 56 automated integration, security, and unit tests:
 
 ```powershell
 .\venv\Scripts\pytest.exe tests/ -v
@@ -165,6 +165,7 @@ To execute all 53 automated integration, security, and unit tests:
 * `tests/test_auth.py` (4 tests) — Registration, login, invalid JWT rejection, cookie auth.
 * `tests/test_cors_and_static.py` (5 tests) — CORS whitelist, static assets, auth templates, PWA manifest.
 * `tests/test_health.py` (5 tests) — Landing page, health API, `/health` alias, database URL normalization, simulated UPI demo view.
+* `tests/test_sync.py` (3 tests) — Version hash calculation, anti-stale Cache-Control headers, real-time mutation sync.
 * `tests/test_feature_upgrade.py` (4 tests) — Auto-redirect smart playback, PDF attachment upload/retrieval, permanent DB/storage deletion, shared-with-me permissions.
 * `tests/test_images.py` (7 tests) — Owner upload, viewer rejection, 5MB limits, EXIF stripping, download endpoint.
 * `tests/test_scanner.py` (7 tests) — Two-tier CV matching, compression tolerance, noise rejection.
@@ -172,7 +173,7 @@ To execute all 53 automated integration, security, and unit tests:
 * `tests/test_private_vault.py` (8 tests) — Zero-trust access controls, expiration, permission revocation.
 * `tests/test_admin_and_security.py` (6 tests) — Admin RBAC, moderation, security headers, rate limiting.
 
-**Total: 53 passed out of 53 tests (100% pass rate).**
+**Total: 56 passed out of 56 tests (100% pass rate).**
 
 ---
 

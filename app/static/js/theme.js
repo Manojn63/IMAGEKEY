@@ -190,12 +190,262 @@
         }, 300);
     }
 
+    /**
+     * ==============================================================================
+     * IMAGEKEY CENTRALIZED API CONFIGURATION & RESILIENT AUTO-SYNC ENGINE
+     * ==============================================================================
+     */
+
+    const DEFAULT_TUNNEL_URL = 'https://artist-pamela-ratios-logging.trycloudflare.com';
+    const SYNC_INTERVAL_MS = 12000; // 12 seconds
+
+    /**
+     * Resolves the active base URL for API communication with support for tunnel overrides.
+     */
+    function getApiBaseUrl() {
+        const override = window.IMAGEKEY_API_BASE_URL || localStorage.getItem('imagekey_api_base_url');
+        if (override) return override.replace(/\/+$/, '');
+
+        const origin = window.location.origin;
+        if (origin && !origin.startsWith('file://')) {
+            return origin;
+        }
+        return DEFAULT_TUNNEL_URL;
+    }
+
+    /**
+     * Resilient fetch wrapper with cache-busting and automatic retry on startup/tunnel delay.
+     */
+    const originalFetch = window.fetch ? window.fetch.bind(window) : null;
+
+    async function apiFetch(input, init = {}, retries = 2) {
+        let url = input;
+        if (typeof input === 'string' && input.startsWith('/')) {
+            const base = getApiBaseUrl();
+            url = `${base}${input}`;
+        }
+
+        const options = { ...init };
+        options.cache = 'no-store'; // Strict anti-stale
+
+        const headers = new Headers(options.headers || {});
+        headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        headers.set('Pragma', 'no-cache');
+        headers.set('Expires', '0');
+        headers.set('X-Requested-With', 'IMAGEKEY-Client');
+        options.headers = headers;
+
+        let attempt = 0;
+        while (true) {
+            try {
+                const response = await originalFetch(url, options);
+                return response;
+            } catch (error) {
+                attempt++;
+                if (attempt > retries) {
+                    console.error(`[IMAGEKEY-API] Request failed after ${attempt} attempts:`, url, error);
+                    throw error;
+                }
+                const backoffMs = attempt * 600;
+                console.warn(`[IMAGEKEY-API] Connection note (${error.message}). Retrying in ${backoffMs}ms (${attempt}/${retries})...`);
+                await new Promise(r => setTimeout(r, backoffMs));
+            }
+        }
+    }
+
+    // Intercept global fetch so all existing page scripts automatically get anti-stale & retry resilience
+    if (originalFetch) {
+        window.fetch = function (input, init) {
+            if (typeof input === 'string' && (input.startsWith('/api/') || input.startsWith('/api') || input === '/health')) {
+                return apiFetch(input, init);
+            }
+            return originalFetch(input, init);
+        };
+    }
+
+    // Auto-Sync state
+    let syncVersion = null;
+    let syncTimestamp = 0;
+    let syncPollTimer = null;
+    let isSyncing = false;
+
+    /**
+     * Updates UI sync indicators across the layout.
+     */
+    function updateSyncUi(state, payload = null) {
+        const pills = document.querySelectorAll('.sync-status-pill');
+        pills.forEach(pill => {
+            const dot = pill.querySelector('.sync-dot');
+            const label = pill.querySelector('.sync-label');
+
+            if (state === 'syncing') {
+                pill.classList.add('syncing');
+                if (label) label.textContent = 'Syncing...';
+            } else if (state === 'synced') {
+                pill.classList.remove('syncing');
+                if (dot) dot.style.backgroundColor = '#10B981';
+                if (label) label.textContent = 'Live Synced';
+            } else if (state === 'updated') {
+                pill.classList.remove('syncing');
+                if (dot) dot.style.backgroundColor = '#D4AF37';
+                if (label) label.textContent = 'Updated';
+            } else if (state === 'offline') {
+                pill.classList.remove('syncing');
+                if (dot) dot.style.backgroundColor = '#EF4444';
+                if (label) label.textContent = 'Offline';
+            }
+        });
+    }
+
+    /**
+     * Polls /api/sync-status and compares current hash with stored version.
+     */
+    async function checkSyncStatus(isManual = false) {
+        if (isSyncing) return;
+        isSyncing = true;
+        updateSyncUi('syncing');
+
+        try {
+            const res = await apiFetch(`/api/sync-status?_t=${Date.now()}`, { cache: 'no-store' }, 1);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+
+            if (!syncVersion) {
+                syncVersion = data.version;
+                syncTimestamp = data.timestamp;
+                updateSyncUi('synced', data);
+            } else if (data.version !== syncVersion) {
+                console.log(`[IMAGEKEY-SYNC] Backend data updated: ${syncVersion} -> ${data.version}`);
+                const previous = syncVersion;
+                syncVersion = data.version;
+                syncTimestamp = data.timestamp;
+                updateSyncUi('updated', data);
+
+                // Notify custom listeners
+                window.dispatchEvent(new CustomEvent('imagekey:synced', {
+                    detail: { previousVersion: previous, currentVersion: data.version, data }
+                }));
+
+                // Refresh active page components
+                triggerPageRefresh(isManual);
+            } else {
+                updateSyncUi('synced', data);
+            }
+        } catch (err) {
+            console.debug('[IMAGEKEY-SYNC] Check note:', err.message);
+            updateSyncUi('offline');
+        } finally {
+            isSyncing = false;
+        }
+    }
+
+    /**
+     * Automatically triggers re-fetch on the active page without requiring a destructive page reload.
+     */
+    function triggerPageRefresh(isManual = false) {
+        let refreshed = false;
+
+        // Dashboard reloaders
+        if (typeof window.loadMyImages === 'function') {
+            window.loadMyImages();
+            if (typeof window.loadSharedWithMe === 'function') window.loadSharedWithMe();
+            refreshed = true;
+        }
+        // Admin reloaders
+        if (typeof window.fetchOverview === 'function') {
+            window.fetchOverview();
+            if (typeof window.fetchLogs === 'function') window.fetchLogs();
+            refreshed = true;
+        }
+        // Permissions reloaders
+        if (typeof window.loadPermissions === 'function') {
+            window.loadPermissions();
+            refreshed = true;
+        }
+        // Public View reloaders
+        if (typeof window.fetchPublicDetails === 'function') {
+            window.fetchPublicDetails();
+            refreshed = true;
+        }
+
+        if (refreshed) {
+            showToast(isManual ? 'Refreshed latest data!' : 'Auto-synced latest updates.', 'info', 2200);
+        } else if (isManual) {
+            showToast('Checked for updates. You are on the latest version.', 'info', 2000);
+        }
+    }
+
+    function startSyncPolling() {
+        if (syncPollTimer) clearInterval(syncPollTimer);
+        syncPollTimer = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                checkSyncStatus(false);
+            }
+        }, SYNC_INTERVAL_MS);
+    }
+
+    function stopSyncPolling() {
+        if (syncPollTimer) {
+            clearInterval(syncPollTimer);
+            syncPollTimer = null;
+        }
+    }
+
+    // Bind lifecycle visibility and network resume handlers
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            checkSyncStatus(false);
+            startSyncPolling();
+        } else {
+            stopSyncPolling();
+        }
+    });
+
+    window.addEventListener('focus', () => checkSyncStatus(false));
+    window.addEventListener('online', () => {
+        showToast('Network restored. Syncing...', 'success', 2000);
+        checkSyncStatus(true);
+    });
+
+    // Start polling immediately when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSyncStatus(false);
+            startSyncPolling();
+        });
+    } else {
+        checkSyncStatus(false);
+        startSyncPolling();
+    }
+
+    // Expose helpers and sync controls globally
+    window.IMAGEKEY_CONFIG = {
+        DEFAULT_TUNNEL_URL,
+        getApiBaseUrl,
+        setApiBaseUrl: (url) => {
+            if (url) localStorage.setItem('imagekey_api_base_url', url);
+            else localStorage.removeItem('imagekey_api_base_url');
+        }
+    };
+
+    window.IMAGEKEY_SYNC = {
+        check: checkSyncStatus,
+        refresh: () => checkSyncStatus(true),
+        getVersion: () => syncVersion,
+        getTimestamp: () => syncTimestamp
+    };
+
+    window.apiFetch = apiFetch;
+    window.syncNow = () => checkSyncStatus(true);
+
     // Expose helpers globally
     window.IMAGEKEY_APP = {
         showToast,
         copyText,
         downloadImage,
-        shareImageAndInfo
+        shareImageAndInfo,
+        apiFetch,
+        syncNow: () => checkSyncStatus(true)
     };
     window.showToast = showToast;
     window.copyText = copyText;

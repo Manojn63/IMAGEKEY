@@ -3,21 +3,24 @@
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, FileResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter
 from app.core.config import settings
-from app.core.database import check_db_connection, init_db
+from app.core.database import check_db_connection, init_db, get_db
 import app.models  # Ensures all 7 ORM models are registered
 from app.api.v1 import api_v1_router
 from app.api.v1.health import get_system_health
 from app.schemas.health import HealthResponse
+from app.schemas.sync import SyncStatusResponse
+from app.services.sync import compute_sync_status
 
 # Configure logging
 logging.basicConfig(
@@ -74,12 +77,21 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # HTTP Security Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
-    """Enforce strict defensive HTTP headers on all outgoing responses."""
+    """Enforce strict defensive HTTP headers and prevent stale caches on dynamic responses."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(self)"
+
+    # Prevent stale caching on dynamic API responses, sync endpoints, and stateful views
+    path = request.url.path
+    if path.startswith("/api/") or path.startswith("/api") or path in ("/health", "/demo/upi"):
+        if "Cache-Control" not in response.headers or response.headers["Cache-Control"] == "no-cache":
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+
     return response
 
 # CORS middleware (Explicit origins required when allow_credentials=True)
@@ -116,6 +128,13 @@ async def service_worker():
 async def root_health_alias():
     """Consistent root-level alias for /api/v1/health."""
     return await get_system_health()
+
+# Root sync status alias
+@app.get("/api/sync-status", response_model=SyncStatusResponse, summary="Root Sync Status")
+async def root_sync_status(db: AsyncSession = Depends(get_db)):
+    """Top-level sync status endpoint for mobile and frontend auto-polling."""
+    result = await compute_sync_status(db)
+    return SyncStatusResponse(**result)
 
 # Mount API Routers
 app.include_router(api_v1_router)

@@ -68,6 +68,10 @@
             </nav>
 
             <div class="nav-actions">
+                <button class="btn btn-outline sync-status-pill" type="button" onclick="window.syncNow()" aria-label="Sync Status" title="Click to refresh latest data" style="padding: 0.45rem 0.75rem; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <span class="sync-dot" style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: var(--status-success);"></span>
+                    <span class="sync-label">Live</span>
+                </button>
                 <button class="btn-theme-toggle" type="button" aria-label="Toggle Dark/Light Mode" title="Toggle Theme">
                     🌙
                 </button>
@@ -227,13 +231,36 @@
     <!-- Core Scripts -->
     <script src="/static/js/theme.js"></script>
 
-    <!-- PWA / Android APK Service Worker Registration -->
+    <!-- PWA / Android APK Service Worker Registration with Auto-Update Handling -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('IMAGEKEY ServiceWorker registered:', reg.scope))
+                    .then(reg => {
+                        console.log('IMAGEKEY ServiceWorker registered:', reg.scope);
+                        // Listen for updates to the service worker
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            if (newWorker) {
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        console.log('New IMAGEKEY version available. Activating...');
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                    }
+                                });
+                            }
+                        });
+                    })
                     .catch(err => console.debug('ServiceWorker registration note:', err));
+            });
+
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    console.log('ServiceWorker updated, activating new version...');
+                    window.location.reload();
+                }
             });
         }
     </script>
