@@ -196,7 +196,7 @@
      * ==============================================================================
      */
 
-    const DEFAULT_TUNNEL_URL = 'https://artist-pamela-ratios-logging.trycloudflare.com';
+    const DEFAULT_TUNNEL_URL = 'https://jobs-screenshots-diane-compensation.trycloudflare.com';
     const SYNC_INTERVAL_MS = 12000; // 12 seconds
 
     /**
